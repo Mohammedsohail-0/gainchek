@@ -243,4 +243,66 @@ router.get('/me', authenticateToken, async (req, res, next) => {
   }
 });
 
+/**
+ * POST /auth/dev-login
+ * Development mode helper for quick local sign-in without external OAuth requirements
+ */
+if (process.env.NODE_ENV !== 'production') {
+  router.post('/dev-login', async (req, res, next) => {
+    try {
+      const { role = 'COACH', gymName } = req.body;
+      const email = `dev_${role.toLowerCase()}@gainchek.local`;
+      const name = role === 'GYM_OWNER' ? 'Demo Gym Owner' : role === 'COACH' ? 'Demo Trainer' : 'Demo Client';
+
+      let user = await prisma.user.findUnique({ where: { email } });
+
+      if (!user) {
+        if (role === 'GYM_OWNER') {
+          user = await prisma.user.create({
+            data: {
+              email, name, role: 'GYM_OWNER',
+              gymOwnerProfile: { create: { name: gymName || 'GainChek Iron Gym' } }
+            }
+          });
+        } else if (role === 'COACH') {
+          user = await prisma.user.create({
+            data: {
+              email, name, role: 'COACH',
+              coachProfile: { create: { gymId: null } }
+            }
+          });
+        } else {
+          // CLIENT
+          const defaultCoach = await prisma.user.create({
+            data: {
+              email: `dev_coach_${Date.now()}@gainchek.local`,
+              name: 'Coach Alex',
+              role: 'COACH',
+              coachProfile: { create: { gymId: null } }
+            },
+            include: { coachProfile: true }
+          });
+
+          user = await prisma.user.create({
+            data: {
+              email, name, role: 'CLIENT',
+              clientProfile: {
+                create: {
+                  name,
+                  coachId: defaultCoach.coachProfile.id
+                }
+              }
+            }
+          });
+        }
+      }
+
+      const token = issueToken(user);
+      return res.json({ token, role: user.role, name: user.name });
+    } catch (err) {
+      next(err);
+    }
+  });
+}
+
 module.exports = router;
