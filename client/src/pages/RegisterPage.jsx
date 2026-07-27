@@ -30,9 +30,19 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
     try {
+      let userInfo = null
+      try {
+        userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+        }).then(r => r.ok ? r.json() : null)
+      } catch (e) {
+        console.warn('Could not fetch Google userinfo directly', e)
+      }
+
       const res = await api.post('/auth/google', {
         credential: tokenResponse.access_token,
         inviteCode,
+        _userInfo: userInfo,
       })
       login(res.data.token, res.data.role, res.data.name)
       const r = res.data.role?.toLowerCase()

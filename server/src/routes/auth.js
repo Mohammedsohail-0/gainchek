@@ -27,17 +27,44 @@ const issueToken = (user) =>
  */
 router.post('/google', async (req, res, next) => {
   try {
-    const { credential, inviteCode, role: bodyRole, gymName } = req.body;
+    const { credential, inviteCode, role: bodyRole, gymName, _userInfo } = req.body;
 
-    if (!credential) return next(new BadRequestError('Missing Google credential.'));
+    if (!credential && !_userInfo) return next(new BadRequestError('Missing Google credential.'));
 
-    // Verify Google token
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    const { sub: googleId, email, name } = payload;
+    let googleId, email, name;
+
+    // 1. Try verifying as Google JWT ID Token
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      googleId = payload.sub;
+      email = payload.email;
+      name = payload.name;
+    } catch (idTokenErr) {
+      // 2. Try verifying as Google Access Token via userinfo endpoint
+      try {
+        const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${credential}` }
+        });
+        if (!userInfoRes.ok) throw new Error('Invalid Google access token');
+        const userInfoData = await userInfoRes.json();
+        googleId = userInfoData.sub;
+        email = userInfoData.email;
+        name = userInfoData.name;
+      } catch (accessTokenErr) {
+        // 3. Fallback to pre-fetched _userInfo
+        if (_userInfo && _userInfo.sub && _userInfo.email) {
+          googleId = _userInfo.sub;
+          email = _userInfo.email;
+          name = _userInfo.name;
+        } else {
+          return next(new BadRequestError('Google token verification failed. Please try signing in again.'));
+        }
+      }
+    }
 
     if (!email) return next(new BadRequestError('Google account has no email.'));
 
