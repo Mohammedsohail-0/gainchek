@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  GYM_OWNER
+  COACH
+  CLIENT
+}
+
+enum ClientGoal {
+  BUILD_MUSCLE
+  LOSE_FAT
+  GET_STRONGER
+  GENERAL_FITNESS
+}
+
+enum InviteType {
+  GYM_TO_COACH
+  COACH_TO_CLIENT
+}
+
+enum MembershipType {
+  GENERAL
+  PERSONAL_TRAINING
+  BOTH
+}
+
+// ─── Core User & Gym ─────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  googleId  String?  @unique
+  name      String
+  role      Role
+  createdAt DateTime @default(now())
+
+  gymOwnerProfile Gym?           @relation("GymOwner")
+  coachProfile    CoachProfile?
+  clientProfile   ClientProfile?
+}
+
+model Gym {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String   @unique
+  owner     User     @relation("GymOwner", fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+
+  coaches       CoachProfile[]
+  invitations   Invitation[]
+  memberships   GymMembership[]
+  announcements Announcement[]
+}
+
+// gymId null = independent coach, behaves exactly like v1.
+model CoachProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  gymId     String?
+  gym       Gym?     @relation(fields: [gymId], references: [id])
+  createdAt DateTime @default(now())
+
+  clients     ClientProfile[]
+  invitations Invitation[]
+  workoutPlans WorkoutPlan[]
+}
+
+model ClientProfile {
+  id         String     @id @default(uuid())
+  userId     String     @unique
+  user       User       @relation(fields: [userId], references: [id])
+  coachId    String
+  coach      CoachProfile @relation(fields: [coachId], references: [id])
+  name       String
+  goal       ClientGoal?
+  age        Int?
+  gender     String?
+  bodyWeight Int?
+  notes      String?
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+
+  workoutPlans   WorkoutPlan[]
+  workoutLogs    WorkoutLog[]
+  bodyWeightLogs BodyWeightLog[]
+  memberships    GymMembership[]
+}
+
+// ─── Gym Membership (separate from coaching relationship) ────────────────────
+
+model GymMembership {
+  id        String         @id @default(uuid())
+  clientId  String
+  client    ClientProfile  @relation(fields: [clientId], references: [id])
+  gymId     String
+  gym       Gym            @relation(fields: [gymId], references: [id])
+  type      MembershipType
+  isActive  Boolean        @default(false)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime       @default(now())
+
+  @@unique([clientId, gymId])
+  @@index([gymId])
+  @@index([clientId])
+}
+
+// ─── Invitations (one model for both types) ──────────────────────────────────
+
+model Invitation {
+  id         String     @id @default(uuid())
+  inviteCode String     @unique @default(cuid())
+  type       InviteType
+  gymId      String?
+  gym        Gym?       @relation(fields: [gymId], references: [id])
+  coachId    String?
+  coach      CoachProfile? @relation(fields: [coachId], references: [id])
+  used       Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+
+  @@index([coachId])
+  @@index([gymId])
+}
+
+// ─── Announcements ───────────────────────────────────────────────────────────
+
+model Announcement {
+  id        String   @id @default(uuid())
+  gymId     String
+  gym       Gym      @relation(fields: [gymId], references: [id])
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([gymId])
+}
+
+// ─── Workout Domain (ported from v1 + cloneLineage kept) ─────────────────────
+
+model WorkoutPlan {
+  id           String        @id @default(uuid())
+  coachId      String
+  coach        CoachProfile  @relation(fields: [coachId], references: [id])
+  clientId     String?
+  client       ClientProfile? @relation(fields: [clientId], references: [id])
+  title        String
+  description  String?
+  isActive     Boolean       @default(true)
+  isTemplate   Boolean       @default(false)
+  clonedFromId String?
+  clonedFrom   WorkoutPlan?  @relation("PlanClones", fields: [clonedFromId], references: [id])
+  clones       WorkoutPlan[] @relation("PlanClones")
+  createdAt    DateTime      @default(now())
+
+  workoutSplits WorkoutSplit[]
+  workoutLogs   WorkoutLog[]
+
+  @@index([coachId])
+  @@index([clientId])
+}
+
+model WorkoutSplit {
+  id            String      @id @default(uuid())
+  workoutPlanId String
+  workoutPlan   WorkoutPlan @relation(fields: [workoutPlanId], references: [id])
+  day           String
+  isRestDay     Boolean     @default(false)
+  name          String?
+  muscleGroups  String?
+  isArchived    Boolean     @default(false)
+  clonedFromId  String?
+  clonedFrom    WorkoutSplit?   @relation("SplitClones", fields: [clonedFromId], references: [id])
+  clones        WorkoutSplit[]  @relation("SplitClones")
+
+  exercises   Exercise[]
+  workoutLogs WorkoutLog[]
+
+  @@index([workoutPlanId])
+}
+
+model Exercise {
+  id             String      @id @default(uuid())
+  workoutSplitId String
+  workoutSplit   WorkoutSplit @relation(fields: [workoutSplitId], references: [id], onDelete: Cascade)
+  name           String
+  muscleGroup    String
+  order          Int
+  notes          String?
+  isArchived     Boolean     @default(false)
+  clonedFromId   String?
+  clonedFrom     Exercise?   @relation("ExerciseClones", fields: [clonedFromId], references: [id])
+  clones         Exercise[]  @relation("ExerciseClones")
+
+  exerciseSets ExerciseSet[]
+  exerciseLogs ExerciseLog[]
+
+  @@index([workoutSplitId])
+}
+
+model ExerciseSet {
+  id         String   @id @default(uuid())
+  exerciseId String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  setNumber  Int
+  reps       Int      @default(0)
+  weight     Float?
+}
+
+model WorkoutLog {
+  id           String       @id @default(uuid())
+  clientId     String
+  client       ClientProfile @relation(fields: [clientId], references: [id])
+  planId       String
+  plan         WorkoutPlan  @relation(fields: [planId], references: [id])
+  splitId      String
+  split        WorkoutSplit @relation(fields: [splitId], references: [id])
+  note         String?
+  loggedAt     DateTime     @default(now())
+
+  exerciseLogs ExerciseLog[]
+
+  @@index([clientId])
+}
+
+model ExerciseLog {
+  id           String     @id @default(uuid())
+  workoutLogId String
+  workoutLog   WorkoutLog @relation(fields: [workoutLogId], references: [id])
+  exerciseId   String
+  exercise     Exercise   @relation(fields: [exerciseId], references: [id])
+  setNumber    Int
+  weightUsed   Float?
+  repsActual   Int?
+}
+
+model BodyWeightLog {
+  id        String        @id @default(uuid())
+  clientId  String
+  client    ClientProfile @relation(fields: [clientId], references: [id])
+  weight    Int
+  loggedAt  DateTime      @default(now())
+
+  @@index([clientId])
+}
