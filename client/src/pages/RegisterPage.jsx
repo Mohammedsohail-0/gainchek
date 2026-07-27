@@ -44,10 +44,25 @@ export default function RegisterPage() {
     }
   }
 
+  const rawClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const isGoogleConfigured = Boolean(
+    rawClientId &&
+    rawClientId !== 'your_google_client_id_here' &&
+    rawClientId !== 'your-google-client-id.apps.googleusercontent.com'
+  );
+
   const googleLogin = useGoogleLogin({
     onSuccess: handleGoogleSuccess,
     onError: () => setError('Google sign-in failed.'),
   })
+
+  const handleSignInClick = () => {
+    if (!isGoogleConfigured) {
+      setError('Google Client ID is not configured. Please set VITE_GOOGLE_CLIENT_ID in client/.env.')
+      return
+    }
+    googleLogin()
+  }
 
   // No invite code
   if (!inviteCode) {
@@ -79,6 +94,20 @@ export default function RegisterPage() {
       <div className="auth-card">
         <div className="auth-logo"><span>Gain</span><span className="logo-accent">Chek</span></div>
         <h2>Join GainChek</h2>
+
+        {!isGoogleConfigured && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--r-md, 8px)',
+            padding: '10px 14px',
+            marginBottom: 16,
+            fontSize: '0.8rem',
+            color: '#fca5a5'
+          }}>
+            ⚠️ Google Client ID is not configured. Set <code>VITE_GOOGLE_CLIENT_ID</code> in <code>client/.env</code>.
+          </div>
+        )}
 
         {checkingInvite && (
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
@@ -120,7 +149,7 @@ export default function RegisterPage() {
                 <span className="spinner" />
               </div>
             ) : (
-              <button className="btn btn-secondary btn-full" onClick={() => googleLogin()}>
+              <button className="btn btn-secondary btn-full" onClick={handleSignInClick}>
                 <svg viewBox="0 0 24 24" width="18" height="18">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
