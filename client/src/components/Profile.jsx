@@ -1,6 +1,7 @@
-function Profile({ name }) {
+import "./Profile.css"
+function Profile({ name, size }) {
     return (
-        <div className="profile">
+        <div className={`profile profile--${size}`}>
             <div className="avatar">
                 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
                     width="100%" viewBox="0 0 781 799" enableBackground="new 0 0 781 799" xmlSpace="preserve">

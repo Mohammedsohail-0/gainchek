@@ -4,10 +4,22 @@ table {
     border-collapse: separate;
     border: 1px solid var(--border);
     border-radius: 12px;
+    border-spacing: 0px; 
 }
+
 thead th {
     font-weight: 400;
     font-size: small;
     text-transform: uppercase;
     border-bottom: 1px solid var(--border);
+    padding: 20px;
+}
+
+tbody tr {
+    padding: 10px;
+}
+
+th, td {
+ text-align: center;    /* Must be identical */
+  padding: 10px;       /* Must be identical */
 }

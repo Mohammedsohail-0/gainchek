@@ -7,6 +7,7 @@ import Button from '../../components/Button'
 import "./GymDashboard.css";
 import Table from '../../components/Table'
 import Profile from '../../components/Profile'
+import ClientCard from '../../components/ClientCard'
 
 
 const MEMBERSHIP_TYPES = [
@@ -57,6 +58,25 @@ export default function GymDashboard() {
   const [newMsg, setNewMsg] = useState('')
   const [postingMsg, setPostingMsg] = useState(false)
 
+  // mobile
+
+  function useIsMobile(breakpoint = 640) {
+    const [isMobile, setIsMobile] = useState(
+      () => window.matchMedia(`(max-width: ${breakpoint}px)`).matches
+    );
+
+    useEffect(() => {
+      const mql = window.matchMedia(`(max-width: ${breakpoint}px)`);
+      const handler = (e) => setIsMobile(e.matches);
+      mql.addEventListener('change', handler);
+      return () => mql.removeEventListener('change', handler);
+    }, [breakpoint]);
+
+    return isMobile;
+  }
+  const isMobile = useIsMobile;
+
+  //fetch all
   useEffect(() => {
     fetchAll()
   }, [])
@@ -202,7 +222,7 @@ export default function GymDashboard() {
     {
       key: 'profile',
       label: 'Client',
-      render: (client) => <Profile name={client.name} />,
+      render: (client) => <Profile name={client.name} size={"lg"} />,
     },
     { key: 'goal', label: 'Goal' },
     {
@@ -219,7 +239,6 @@ export default function GymDashboard() {
   ];
 
   const unassignedClientsData = clients.filter((c) => !c.coachId);
-  console.log(clients.filter((c) => !c.coachId))
 
   return (
     <div className="sidebar-layout">
@@ -256,7 +275,22 @@ export default function GymDashboard() {
               </div>
 
               {/*Un-assigned clients list*/}
-              <Table columns={unassignedClientsColumns} data={unassignedClientsData} />
+              {isMobile ? (
+                <div className="card-list">
+                  {unassignedClientsData.map((client) => (
+                    <ClientCard
+                      key={client.id}
+                      name={client.name}
+                      data={client.goal}
+                      others={
+                        <Button variant="secondary" text="Assign Coach" onClick={() => handleAssignCoach(client.id)} />
+                      }
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Table columns={unassignedClientsColumns} data={unassignedClientsData} />
+              )}
               <div className="card">
                 <h3 style={{ marginBottom: 16 }}>Latest Announcement</h3>
                 {announcements.length === 0 ? (
