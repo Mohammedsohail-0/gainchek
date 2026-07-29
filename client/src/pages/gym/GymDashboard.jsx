@@ -8,6 +8,7 @@ import "./GymDashboard.css";
 import Table from '../../components/Table'
 import Profile from '../../components/Profile'
 import ClientCard from '../../components/ClientCard'
+import { useIsMobile } from '../../components/useIsMobile'
 
 
 const MEMBERSHIP_TYPES = [
@@ -59,22 +60,7 @@ export default function GymDashboard() {
   const [postingMsg, setPostingMsg] = useState(false)
 
   // mobile
-
-  function useIsMobile(breakpoint = 640) {
-    const [isMobile, setIsMobile] = useState(
-      () => window.matchMedia(`(max-width: ${breakpoint}px)`).matches
-    );
-
-    useEffect(() => {
-      const mql = window.matchMedia(`(max-width: ${breakpoint}px)`);
-      const handler = (e) => setIsMobile(e.matches);
-      mql.addEventListener('change', handler);
-      return () => mql.removeEventListener('change', handler);
-    }, [breakpoint]);
-
-    return isMobile;
-  }
-  const isMobile = useIsMobile;
+  const isMobile = useIsMobile();
 
   //fetch all
   useEffect(() => {
@@ -217,6 +203,26 @@ export default function GymDashboard() {
   }
 
   const ExpiredMembersCount = memberships.filter(m => isCurrentMonthPaid(m)).length;
+  const ExpiredClientsColumns = [
+    {
+      key: 'profile',
+      label: 'Client',
+      render: (client) => <Profile name={client.name} size={"lg"} />,
+    },
+    { key: 'expiredDate', label: 'expiredDate' },
+    {
+      key: 'action',
+      label: '',
+      render: (client) => (
+        <Button
+          variant="danger"
+          text="Remove"
+          onClick={() => handleRemoveclient(client.id)}
+        />
+      ),
+    },
+  ];
+  const ExpiredMClientsData = clients.filter((c) => isCurrentMonthPaid(c))
 
   const unassignedClientsColumns = [
     {
@@ -275,22 +281,48 @@ export default function GymDashboard() {
               </div>
 
               {/*Un-assigned clients list*/}
+              <div className='un-assigned-clients-container'>
+              <div>
+                <h3>Un-assigned clients</h3>
+              </div>
               {isMobile ? (
                 <div className="card-list">
                   {unassignedClientsData.map((client) => (
                     <ClientCard
-                      key={client.id}
-                      name={client.name}
-                      data={client.goal}
-                      others={
-                        <Button variant="secondary" text="Assign Coach" onClick={() => handleAssignCoach(client.id)} />
-                      }
+                    key={client.id}
+                    data={[client.name, `Goal: ${client.goal}`]}
+                    others={
+                      <Button variant="secondary" text="Assign Coach" onClick={() => handleAssignCoach(client.id)} />
+                    }
                     />
                   ))}
                 </div>
               ) : (
                 <Table columns={unassignedClientsColumns} data={unassignedClientsData} />
               )}
+              </div>
+
+              {/*Expired clients list*/}
+              <div className='expired-clients-container'>
+              <div>
+                <h3>Expired clients</h3>
+              </div>
+              {isMobile ? (
+                <div className="card-list">
+                  {unassignedClientsData.map((client) => (
+                    <ClientCard
+                    key={client.id}
+                    data={[client.name, client.endDate]}
+                    others={
+                      <Button variant="secondary" text="Remove" onClick={() => handleRemoveClient(client.id)} />
+                    }
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Table columns={ExpiredClientsColumns} data={ExpiredMClientsData} />
+              )}
+              </div>
               <div className="card">
                 <h3 style={{ marginBottom: 16 }}>Latest Announcement</h3>
                 {announcements.length === 0 ? (

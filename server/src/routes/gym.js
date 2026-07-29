@@ -230,8 +230,17 @@ router.get('/clients/:clientId', async (req, res, next) => {
  */
 router.get('/memberships', async (req, res, next) => {
   try {
+    const { status } = req.query; // ?status=expired | ?status=active
+
+    const where = { gymId: req.gym.id };
+    if (status === 'expired') {
+      where.endDate = { lt: new Date() };
+    } else if (status === 'active') {
+      where.OR = [{ endDate: null }, { endDate: { gte: new Date() } }];
+    }
+
     const memberships = await prisma.gymMembership.findMany({
-      where: { gymId: req.gym.id },
+      where,
       include: {
         client: {
           include: {

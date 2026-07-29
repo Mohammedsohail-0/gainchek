@@ -1,0 +1,13 @@
+.ClientCard {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--surface);
+    margin-block: 10px ;
+}
+.data{
+    font-size: 0.6rem;
+}
