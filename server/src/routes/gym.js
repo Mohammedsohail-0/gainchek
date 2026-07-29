@@ -165,10 +165,7 @@ router.get('/clients', async (req, res, next) => {
   try {
     const clients = await prisma.clientProfile.findMany({
       where: {
-        OR: [
-          { coach: { gymId: req.gym.id } },
-          { memberships: { some: { gymId: req.gym.id } } }
-        ]
+        coach: { gymId: req.gym.id }
       },
       include: {
         user: { select: { email: true } },
@@ -202,7 +199,10 @@ router.get('/clients/:clientId', async (req, res, next) => {
     const client = await prisma.clientProfile.findFirst({
       where: {
         id: req.params.clientId,
-        coach: { gymId: req.gym.id }
+        OR: [
+          { coach: { gymId: req.gym.id } },
+          { memberships: { some: { gymId: req.gym.id } } }
+        ]
       },
       include: {
         user: { select: { email: true } },
