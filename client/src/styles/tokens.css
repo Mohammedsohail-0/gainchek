@@ -1,0 +1,74 @@
+/* ─── GainChek Design System Tokens ──────────────────────────────────────────
+   Colors (carried directly from v1 spec):
+   --bg:               #0a0a0a   app background
+   --surface:          #111111   card/panel background, one step up from bg
+   --border:           #888888   primary borders
+   --border-secondary: #505050   subtler dividers
+   --accent:           #4CAF50   primary actions, active states, brand green
+   --accent-hover:     #43a047   accent hover/pressed state
+   --text-primary:     #ffffff
+   --text-secondary:   #c2c2c2
+   --error:            #FF4444
+
+   Typography:
+   - Headings: 'Syne', sans-serif
+   - Body: 'Lexend', 'Inter', sans-serif
+
+   Spacing Scale:
+   4px 8px 12px 16px 24px 32px 48px 64px
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Colors */
+  --bg:               #0a0a0a;
+  --surface:          #111111;
+  --surface-hover:    #181818;
+  --border:           #888888;
+  --border-secondary: #505050;
+  --accent:           #4CAF50;
+  --accent-hover:     #43a047;
+  --accent-dim:       rgba(76, 175, 80, 0.12);
+  --accent-glow:      rgba(76, 175, 80, 0.25);
+  --text-primary:     #ffffff;
+  --text-secondary:   #c2c2c2;
+  --text-muted:       #808080;
+  --error:            #FF4444;
+  --error-dim:        rgba(255, 68, 68, 0.12);
+
+  /* Fonts */
+  --font-heading:     'Syne', sans-serif;
+  --font-body:        'Lexend', 'Inter', system-ui, sans-serif;
+
+  /* Spacing Scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Border Radius */
+  --radius-sm:  6px;
+  --radius-md:  8px;
+  --radius-card: 12px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+
+  /* Touch targets */
+  --min-touch-target: 48px;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

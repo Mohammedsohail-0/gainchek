@@ -12,66 +12,82 @@ const GOAL_LABELS = {
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-const isSameDay = (a, b) =>
-  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
-
 function WorkoutSplitAccordion({ plan }) {
   const [openSplitId, setOpenSplitId] = useState(null)
 
-  if (!plan) return <p className="empty-state">No active plan assigned.</p>
+  if (!plan) return null
 
   const ordered = DAYS
     .map(d => plan.workoutSplits?.find(s => s.day?.toLowerCase() === d.toLowerCase()))
     .filter(Boolean)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {ordered.map(split => (
-        <div key={split.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div key={split.id} className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 0 }}>
           <button
             style={{
-              width: '100%', padding: '14px 20px', background: 'none', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem'
+              width: '100%',
+              padding: '14px 20px',
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              color: 'var(--text-primary)',
+              fontWeight: 600,
+              fontSize: '0.95rem'
             }}
             onClick={() => setOpenSplitId(openSplitId === split.id ? null : split.id)}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', width: 70 }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', width: 80 }}>
                 {split.day}
               </span>
               {split.isRestDay ? (
                 <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontWeight: 400 }}>
-                  Rest day
+                  Rest Day
                 </span>
               ) : (
                 <span>{split.name || split.day}</span>
               )}
             </div>
-            <svg
-              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-              style={{ transform: openSplitId === split.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
-            >
-              <path d="M6 9l6 6 6-6"/>
-            </svg>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {!split.isRestDay && split.exercises?.length > 0 && (
+                <span className="status-badge status-active">
+                  <span className="tick-mark">✓</span> {split.exercises.length} Exercises
+                </span>
+              )}
+              <span style={{ transform: openSplitId === split.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                ▼
+              </span>
+            </div>
           </button>
+
           {openSplitId === split.id && !split.isRestDay && split.exercises?.length > 0 && (
-            <div style={{ padding: '0 20px 16px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-secondary)', background: 'var(--bg)' }}>
               {split.exercises.map(ex => (
-                <div key={ex.id} style={{ marginTop: 14 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{ex.name}</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{ex.muscleGroup}</span>
+                <div key={ex.id} style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{ex.name}</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{ex.muscleGroup}</span>
                   </div>
                   {ex.exerciseSets?.length > 0 && (
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {ex.exerciseSets.map(s => (
-                        <div key={s.id} style={{
-                          background: 'var(--bg-surface)', border: '1px solid var(--border)',
-                          borderRadius: 'var(--r-sm)', padding: '4px 10px', fontSize: '0.78rem',
-                          color: 'var(--text-secondary)'
-                        }}>
-                          {s.setNumber}. {s.reps} reps{s.weight != null ? ` @ ${s.weight}kg` : ''}
+                        <div
+                          key={s.id}
+                          style={{
+                            background: 'var(--surface)',
+                            border: '1px solid var(--border-secondary)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '4px 10px',
+                            fontSize: '0.8rem',
+                            color: 'var(--text-primary)'
+                          }}
+                        >
+                          Set {s.setNumber}: <strong>{s.reps} reps</strong> {s.weight != null ? `@ ${s.weight}kg` : ''}
                         </div>
                       ))}
                     </div>
@@ -96,7 +112,7 @@ export default function ClientDetail() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('Plan')
 
-  // Remove client dialog
+  // Remove dialog
   const [showRemove, setShowRemove] = useState(false)
   const [removing, setRemoving] = useState(false)
 
@@ -112,7 +128,7 @@ export default function ClientDetail() {
         const planRes = await api.get(`/workout/activePlan/${id}`)
         setActivePlan(planRes.data)
       } catch (e) {
-        if (e.response?.status !== 404) toast.error("Couldn't load plan")
+        if (e.response?.status !== 404) toast.error("Couldn't load active plan")
       }
     } catch {
       toast.error('Failed to load client data')
@@ -136,29 +152,46 @@ export default function ClientDetail() {
     }
   }
 
-  if (loading) return <p className="loading-text">Loading client...</p>
-  if (!client) return <p className="empty-state">Client not found</p>
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-secondary)' }}>
+        Loading client profile...
+      </div>
+    )
+  }
+
+  if (!client) {
+    return (
+      <div className="empty-state">
+        <div className="empty-icon">❌</div>
+        <div className="empty-title">Client Not Found</div>
+        <button className="btn btn-secondary btn-sm" onClick={() => navigate('/coach')} style={{ marginTop: 12 }}>
+          Back to Dashboard
+        </button>
+      </div>
+    )
+  }
 
   const bwLogs = client.bodyWeightLogs || []
   const latestBw = bwLogs[0]?.weight
 
   return (
-    <div style={{ animation: 'fadeSlideUp 0.3s ease' }}>
-      {/* Back + Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+    <div>
+      {/* Back button and page title */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <button
           className="btn btn-secondary btn-sm"
           onClick={() => navigate('/coach')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
         >
-          ← Back
+          ← Back to Clients
         </button>
-        <div style={{ display: 'flex', gap: 10 }}>
+
+        <div style={{ display: 'flex', gap: 12 }}>
           <button
             className="btn btn-primary btn-sm"
             onClick={() => navigate(`/coach/clients/${id}/plan/create`)}
           >
-            + New Plan
+            + Create New Plan
           </button>
           <button className="btn btn-danger btn-sm" onClick={() => setShowRemove(true)}>
             Remove Client
@@ -166,61 +199,85 @@ export default function ClientDetail() {
         </div>
       </div>
 
-      {/* Client Profile Header */}
-      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 24 }}>
-        <div className="avatar avatar-lg" style={{ fontSize: '1.5rem' }}>
-          {client.name?.[0]?.toUpperCase() || '?'}
-        </div>
-        <div style={{ flex: 1 }}>
-          <h2 style={{ fontWeight: 700, fontSize: '1.3rem', marginBottom: 4 }}>{client.name}</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: 8 }}>
-            {client.user?.email}
-          </p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {client.goal && (
-              <span className="chip">{GOAL_LABELS[client.goal] || client.goal}</span>
-            )}
-            {latestBw && (
-              <span className="chip" style={{ background: 'rgba(59,130,246,0.12)', color: 'var(--info)' }}>
-                {latestBw} kg
-              </span>
-            )}
-            {client.age && (
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{client.age} years</span>
-            )}
-            {client.gender && (
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{client.gender}</span>
-            )}
+      {/* Client Profile Overview Card */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+          <div style={{
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            background: 'var(--surface-hover)',
+            border: '2px solid var(--accent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.5rem',
+            fontWeight: 800,
+            color: 'var(--accent)'
+          }}>
+            {client.name?.[0]?.toUpperCase() || '?'}
           </div>
-          {client.notes && (
-            <p style={{ marginTop: 12, color: 'var(--text-secondary)', fontSize: '0.875rem', fontStyle: 'italic' }}>
-              "{client.notes}"
+
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <h1 className="page-title" style={{ fontSize: '1.4rem', marginBottom: 4 }}>{client.name}</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 12 }}>
+              {client.user?.email || 'No email registered'}
             </p>
-          )}
+
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {client.goal && (
+                <span className="status-badge status-active">
+                  🎯 {GOAL_LABELS[client.goal] || client.goal}
+                </span>
+              )}
+              {latestBw && (
+                <span className="status-badge status-inactive">
+                  ⚖️ {latestBw} kg
+                </span>
+              )}
+              {client.age && (
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center' }}>
+                  {client.age} yrs old
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="tabs" style={{ marginBottom: 24 }}>
-        {['Plan', 'Logs'].map(t => (
-          <button key={t} className={`tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
-            {t}
-          </button>
-        ))}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border-secondary)', paddingBottom: 8 }}>
+        <button
+          className={`nav-link${tab === 'Plan' ? ' active' : ''}`}
+          onClick={() => setTab('Plan')}
+        >
+          Active Plan
+        </button>
+        <button
+          className={`nav-link${tab === 'Logs' ? ' active' : ''}`}
+          onClick={() => setTab('Logs')}
+        >
+          Workout History ({logs.length})
+        </button>
       </div>
 
       {/* ─── Plan Tab ──────────────────────────────────────────────────────── */}
       {tab === 'Plan' && (
         <div>
           {activePlan ? (
-            <>
-              <div className="section-header" style={{ marginBottom: 16 }}>
+            <div>
+              <div className="card" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                  <div className="section-title">{activePlan.title}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h3 style={{ fontSize: '1.15rem' }}>{activePlan.title}</h3>
+                    <span className="status-badge status-active">
+                      <span className="tick-mark">✓</span> Active
+                    </span>
+                  </div>
                   {activePlan.description && (
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: 4 }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 4 }}>
                       {activePlan.description}
-                    </div>
+                    </p>
                   )}
                 </div>
                 <button
@@ -230,18 +287,20 @@ export default function ClientDetail() {
                   Edit Plan
                 </button>
               </div>
+
               <WorkoutSplitAccordion plan={activePlan} />
-            </>
+            </div>
           ) : (
             <div className="empty-state">
               <div className="empty-icon">📋</div>
-              <p style={{ marginBottom: 16 }}>No active plan. Assign a template or create a new one.</p>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <div className="empty-title">No Active Workout Plan</div>
+              <div className="empty-text">Create a custom workout plan or assign a pre-made template.</div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
                 <button
                   className="btn btn-primary"
                   onClick={() => navigate(`/coach/clients/${id}/plan/create`)}
                 >
-                  Create Plan
+                  + Create Custom Plan
                 </button>
                 <button
                   className="btn btn-secondary"
@@ -261,32 +320,31 @@ export default function ClientDetail() {
           {logs.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">📊</div>
-              <p>No workout logs yet.</p>
+              <div className="empty-title">No Workout Logs Recorded</div>
+              <div className="empty-text">When {client.name} logs a workout on their device, history will appear here.</div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {logs.map(log => (
-                <div key={log.id} className="card">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <div>
-                      <span style={{ fontWeight: 600 }}>{log.split?.name || log.split?.day || 'Workout'}</span>
-                      {log.note && (
-                        <span style={{ marginLeft: 12, color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
-                          {log.note}
-                        </span>
-                      )}
+                <div key={log.id} className="card" style={{ marginBottom: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="tick-mark">✓</span>
+                      <span style={{ fontWeight: 600 }}>{log.split?.name || log.split?.day || 'Workout Log'}</span>
                     </div>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       {new Date(log.loggedAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {[...new Set(log.exerciseLogs?.map(l => l.exercise?.muscleGroup).filter(Boolean))].map(mg => (
-                      <span key={mg} className="chip">{mg}</span>
-                    ))}
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', display: 'flex', alignItems: 'center' }}>
-                      {log.exerciseLogs?.length || 0} sets logged
-                    </span>
+
+                  {log.note && (
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic', marginBottom: 8 }}>
+                      "{log.note}"
+                    </p>
+                  )}
+
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    {log.exerciseLogs?.length || 0} sets logged successfully
                   </div>
                 </div>
               ))}
@@ -295,19 +353,38 @@ export default function ClientDetail() {
         </div>
       )}
 
-      {/* Remove Dialog */}
+      {/* Remove Client Modal */}
       {showRemove && (
-        <div className="dialog-backdrop" onClick={() => setShowRemove(false)}>
-          <div className="dialog" onClick={e => e.stopPropagation()}>
-            <h3>Remove {client.name}?</h3>
-            <p>
-              They will be deactivated and no longer appear in your dashboard.
-              Their workout history is preserved — they can be re-invited later.
+        <div className="sidebar-overlay mobile-open" onClick={() => setShowRemove(false)}>
+          <div
+            className="card"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '90%',
+              maxWidth: 440,
+              zIndex: 210,
+              margin: 0
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: 12 }}>Remove {client.name}?</h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 20 }}>
+              They will be unassigned from your active clients list. Their past workout history is preserved.
             </p>
-            <div className="dialog-actions">
-              <button className="btn btn-secondary" onClick={() => setShowRemove(false)}>Cancel</button>
-              <button className="btn btn-danger" onClick={handleRemove} disabled={removing}>
-                {removing ? 'Removing...' : 'Remove Client'}
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button className="btn btn-secondary" onClick={() => setShowRemove(false)}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger-confirm"
+                onClick={handleRemove}
+                disabled={removing}
+              >
+                {removing ? 'Removing...' : 'Confirm Remove'}
               </button>
             </div>
           </div>

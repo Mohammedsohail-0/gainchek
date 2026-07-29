@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
@@ -51,20 +51,22 @@ export default function RegisterPage() {
     rawClientId !== 'your-google-client-id.apps.googleusercontent.com'
   );
 
-  // No invite code
   if (!inviteCode) {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <div className="auth-logo"><span>Gain</span><span className="logo-accent">Chek</span></div>
-          <h2>You need an invite link</h2>
+          <div className="auth-logo">
+            GainChek <span className="tick-mark">✓</span>
+          </div>
+          <h2 style={{ textAlign: 'center', marginBottom: 12 }}>Invite required</h2>
           <p className="auth-subtitle">
-            To join as a client, ask your trainer to send you their invite link.
-            You can't sign up as a client without one.
+            To join as a client, ask your trainer for their invite link.
           </p>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-            Are you a trainer or gym owner? <a href="/login">Sign in here</a>.
-          </p>
+          <div style={{ textAlign: 'center', marginTop: 20 }}>
+            <Link to="/login" className="btn btn-secondary btn-full">
+              Go to Sign In →
+            </Link>
+          </div>
         </div>
       </div>
     )
@@ -79,39 +81,25 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo"><span>Gain</span><span className="logo-accent">Chek</span></div>
-        <h2>Join GainChek</h2>
-
-        {!isGoogleConfigured && (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: 'var(--r-md, 8px)',
-            padding: '10px 14px',
-            marginBottom: 16,
-            fontSize: '0.8rem',
-            color: '#fca5a5'
-          }}>
-            ⚠️ Google Client ID is not configured. Set <code>VITE_GOOGLE_CLIENT_ID</code> in <code>client/.env</code>.
-          </div>
-        )}
+        <div className="auth-logo">
+          GainChek <span className="tick-mark">✓</span>
+        </div>
+        <h2 style={{ textAlign: 'center', marginBottom: 12 }}>Join GainChek</h2>
 
         {checkingInvite && (
-          <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <span className="spinner" />
-            <p style={{ color: 'var(--text-muted)', marginTop: 12, fontSize: '0.875rem' }}>
-              Validating invite link...
-            </p>
+          <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)' }}>
+            Validating invite link...
           </div>
         )}
 
         {!checkingInvite && error && (
-          <>
-            <p className="error-text" style={{ margin: '16px 0' }}>{error}</p>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-              <a href="/login">Go to sign in →</a>
-            </p>
-          </>
+          <div className="empty-state" style={{ margin: '16px 0' }}>
+            <div className="empty-title" style={{ color: 'var(--error)' }}>Invalid Invite Link</div>
+            <div className="empty-text">{error}</div>
+            <Link to="/login" className="btn btn-secondary btn-sm" style={{ marginTop: 12 }}>
+              Go to Sign In
+            </Link>
+          </div>
         )}
 
         {!checkingInvite && inviteInfo && !error && (
@@ -119,25 +107,29 @@ export default function RegisterPage() {
             {contextLine && (
               <div style={{
                 background: 'var(--accent-dim)',
-                border: '1px solid var(--border-focus)',
-                borderRadius: 'var(--r-md)',
-                padding: '12px 16px',
-                marginBottom: 24,
-                fontSize: '0.875rem',
+                border: '1px solid var(--accent)',
+                borderRadius: 'var(--radius-md)',
+                padding: '14px 16px',
+                marginBottom: 20,
+                fontSize: '0.9rem',
                 color: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
               }}>
-                {contextLine}
+                <span className="tick-mark">✓</span>
+                <span>{contextLine}</span>
               </div>
             )}
-            <p className="auth-subtitle">Sign in with Google to create your account.</p>
-            {error && <p className="error-text" style={{ marginBottom: 16 }}>{error}</p>}
+            <p className="auth-subtitle">Sign in with Google to accept your invite and set up your account.</p>
+            
             {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
-                <span className="spinner" />
+              <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--text-secondary)' }}>
+                Creating account...
               </div>
             ) : (
               isGoogleConfigured && (
-                <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 16 }}>
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={() => setError('Google sign-in failed. Please try again.')}

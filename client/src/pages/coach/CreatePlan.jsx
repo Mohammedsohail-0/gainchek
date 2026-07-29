@@ -6,7 +6,6 @@ import api from '../../services/api'
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const DAY_SHORT = ['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa']
 
-// ─── Autocomplete ─────────────────────────────────────────────────────────────
 function Autocomplete({ value, onChange, suggestions = [], placeholder, onEnter }) {
   const [open, setOpen] = useState(false)
   const [filtered, setFiltered] = useState([])
@@ -25,7 +24,7 @@ function Autocomplete({ value, onChange, suggestions = [], placeholder, onEnter 
   }, [])
 
   return (
-    <div className="autocomplete-wrapper" ref={ref}>
+    <div style={{ position: 'relative', width: '100%' }} ref={ref}>
       <input
         className="form-input"
         value={value}
@@ -35,9 +34,31 @@ function Autocomplete({ value, onChange, suggestions = [], placeholder, onEnter 
         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onEnter?.() } }}
       />
       {open && filtered.length > 0 && (
-        <div className="autocomplete-dropdown">
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          background: 'var(--surface)',
+          border: '1px solid var(--border-secondary)',
+          borderRadius: 'var(--radius-md)',
+          zIndex: 50,
+          maxHeight: 180,
+          overflowY: 'auto',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.5)'
+        }}>
           {filtered.map(s => (
-            <div key={s} className="autocomplete-item" onMouseDown={() => { onChange(s); setOpen(false) }}>
+            <div
+              key={s}
+              style={{
+                padding: '10px 14px',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                color: 'var(--text-primary)',
+                borderBottom: '1px solid var(--border-secondary)'
+              }}
+              onMouseDown={() => { onChange(s); setOpen(false) }}
+            >
               {s}
             </div>
           ))}
@@ -47,7 +68,6 @@ function Autocomplete({ value, onChange, suggestions = [], placeholder, onEnter 
   )
 }
 
-// ─── ExerciseCard ─────────────────────────────────────────────────────────────
 function ExerciseCard({ exercise, onRemove, onUpdate, nameOptions }) {
   const addSet = () => onUpdate(ex => ({
     ...ex,
@@ -64,28 +84,32 @@ function ExerciseCard({ exercise, onRemove, onUpdate, nameOptions }) {
   }))
 
   return (
-    <div className="exercise-block">
+    <div className="card" style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
         <div style={{ flex: 1 }}>
           <Autocomplete
             value={exercise.name}
             onChange={v => onUpdate(ex => ({ ...ex, name: v }))}
             suggestions={nameOptions}
-            placeholder="Exercise name…"
+            placeholder="Exercise name (e.g. Barbell Bench Press)"
           />
         </div>
-        <button className="btn btn-danger btn-sm" onClick={onRemove} title="Remove exercise">×</button>
+        <button className="btn btn-danger btn-sm" onClick={onRemove} title="Remove exercise">
+          ✕
+        </button>
       </div>
 
-      {/* Sets */}
-      <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 40px', gap: 6, marginBottom: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 40px', gap: 8, marginBottom: 8 }}>
         {['SET', 'KG', 'REPS', ''].map((h, i) => (
-          <span key={i} style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', textAlign: 'center' }}>{h}</span>
+          <span key={i} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700, textAlign: 'center' }}>
+            {h}
+          </span>
         ))}
       </div>
+
       {exercise.sets.map(s => (
-        <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 40px', gap: 6, marginBottom: 6 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+        <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 40px', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>
             {s.setNumber}
           </div>
           <input
@@ -94,7 +118,7 @@ function ExerciseCard({ exercise, onRemove, onUpdate, nameOptions }) {
             value={s.weight}
             onChange={e => updateSet(s.id, 'weight', e.target.value)}
             placeholder="—"
-            style={{ padding: '7px 10px', textAlign: 'center' }}
+            style={{ textAlign: 'center', minHeight: 40, padding: '4px 8px' }}
           />
           <input
             className="form-input"
@@ -102,29 +126,29 @@ function ExerciseCard({ exercise, onRemove, onUpdate, nameOptions }) {
             value={s.reps}
             onChange={e => updateSet(s.id, 'reps', e.target.value)}
             placeholder="—"
-            style={{ padding: '7px 10px', textAlign: 'center' }}
+            style={{ textAlign: 'center', minHeight: 40, padding: '4px 8px' }}
           />
           <button
-            style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1rem' }}
+            className="btn btn-danger btn-sm"
             onClick={() => removeSet(s.id)}
+            style={{ minHeight: 36, padding: '4px 8px' }}
           >
-            ×
+            ✕
           </button>
         </div>
       ))}
-      <button className="btn btn-secondary btn-sm" onClick={addSet} style={{ marginTop: 6, fontSize: '0.78rem' }}>
+
+      <button className="btn btn-secondary btn-sm" onClick={addSet} style={{ marginTop: 8 }}>
         + Add Set
       </button>
     </div>
   )
 }
 
-// ─── CreatePlan (exported, used for both create and template) ─────────────────
 export default function CreatePlan({ isTemplate = false }) {
   const navigate = useNavigate()
   const { clientId } = useParams()
 
-  // Step 1: Plan details + split schedule
   const [step, setStep] = useState(1)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -135,10 +159,9 @@ export default function CreatePlan({ isTemplate = false }) {
   const [muscleGroupOptions, setMuscleGroupOptions] = useState([])
   const [muscleInput, setMuscleInput] = useState('')
 
-  // Step 2: Exercise builder
   const [planId, setPlanId] = useState(null)
-  const [splitIds, setSplitIds] = useState([]) // [{day, id}]
-  const [splitDrafts, setSplitDrafts] = useState({}) // {splitId: {..., exercises: []}}
+  const [splitIds, setSplitIds] = useState([])
+  const [splitDrafts, setSplitDrafts] = useState({})
   const [savedDays, setSavedDays] = useState({})
   const [saving, setSaving] = useState(false)
   const [finishing, setFinishing] = useState(false)
@@ -197,7 +220,6 @@ export default function CreatePlan({ isTemplate = false }) {
     }
   }
 
-  // Step 2: load each split's data and exercise options when day changes
   const currentDraftId = splitIds.find(s => s.day === selectedDay)?.id
 
   useEffect(() => {
@@ -212,16 +234,6 @@ export default function CreatePlan({ isTemplate = false }) {
     }).catch(() => {})
   }, [step, currentDraftId, splitDrafts])
 
-  useEffect(() => {
-    if (!currentDraftId) return
-    const draft = splitDrafts[currentDraftId]
-    if (!draft) return
-    const groups = (draft.muscleGroups || '').split(',').map(g => g.trim()).filter(Boolean)
-    const firstGroup = groups[0]
-    if (!firstGroup) return
-    api.get('/library/exercises', { params: { muscleGroup: firstGroup } }).then(r => setExerciseOptions(r.data)).catch(() => {})
-  }, [currentDraftId, splitDrafts])
-
   const currentDraft = splitDrafts[currentDraftId]
   const currentGroups = (currentDraft?.muscleGroups || '').split(',').map(g => g.trim()).filter(Boolean)
   const [targetMuscle, setTargetMuscle] = useState('')
@@ -230,7 +242,7 @@ export default function CreatePlan({ isTemplate = false }) {
     if (currentGroups.length && !currentGroups.includes(targetMuscle)) {
       setTargetMuscle(currentGroups[0])
     }
-  }, [currentGroups.join(','), currentDraftId])
+  }, [currentGroups, currentDraftId])
 
   useEffect(() => {
     if (!targetMuscle) return
@@ -265,7 +277,7 @@ export default function CreatePlan({ isTemplate = false }) {
       }))
       await api.post(`/workout/split/${currentDraftId}/exercises`, { exercises: payload })
       setSavedDays(prev => ({ ...prev, [currentDraftId]: true }))
-      toast.success(`${selectedDay} saved`)
+      toast.success(`${selectedDay} saved ✓`)
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to save day')
     } finally {
@@ -288,10 +300,10 @@ export default function CreatePlan({ isTemplate = false }) {
 
       if (!isTemplate && clientId) {
         await api.post(`/workout/plan/${planId}/assign`, { clientId })
-        toast.success('Plan assigned to client!')
+        toast.success('Plan created & assigned ✓')
         navigate(`/coach/clients/${clientId}`)
       } else {
-        toast.success('Template saved!')
+        toast.success('Template saved successfully ✓')
         navigate('/coach/templates')
       }
     } catch (err) {
@@ -311,115 +323,108 @@ export default function CreatePlan({ isTemplate = false }) {
   })
 
   return (
-    <div style={{ maxWidth: 780, margin: '0 auto', padding: '24px 20px', animation: 'fadeSlideUp 0.3s ease' }}>
+    <div style={{ maxWidth: 800, margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
-        <button className="btn btn-secondary btn-sm" onClick={() => navigate(-1)}>← Back</button>
-        <h1 style={{ fontWeight: 800, fontSize: '1.4rem' }}>
-          {step === 1
-            ? (isTemplate ? 'New Template' : 'Create Plan')
-            : `Add Exercises`}
-        </h1>
-        {/* Step progress */}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-          {[1, 2].map(n => (
-            <div key={n} style={{
-              width: 28, height: 28, borderRadius: '50%', border: '2px solid',
-              borderColor: step >= n ? 'var(--accent)' : 'var(--border)',
-              background: step > n ? 'var(--accent)' : step === n ? 'var(--accent-dim)' : 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.78rem', fontWeight: 700,
-              color: step >= n ? 'var(--accent)' : 'var(--text-muted)',
-              transition: 'all 0.2s'
-            }}>{n}</div>
-          ))}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="btn btn-secondary btn-sm" onClick={() => navigate(-1)}>
+            ← Back
+          </button>
+          <h1 className="page-title" style={{ marginBottom: 0 }}>
+            {step === 1 ? (isTemplate ? 'New Template' : 'Create Workout Plan') : 'Add Exercises'}
+          </h1>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <span className={`status-badge ${step === 1 ? 'status-active' : 'status-inactive'}`}>
+            Step 1: Setup
+          </span>
+          <span className={`status-badge ${step === 2 ? 'status-active' : 'status-inactive'}`}>
+            Step 2: Exercises
+          </span>
         </div>
       </div>
 
-      {/* ─── Step 1: Plan Details + Split Schedule ───────────────────────── */}
+      {/* ─── Step 1: Plan Details & Schedule ─────────────────────────────── */}
       {step === 1 && (
         <div>
-          {/* Plan title + description */}
           <div className="card" style={{ marginBottom: 20 }}>
-            <div className="form-group" style={{ marginBottom: 16 }}>
+            <div className="form-group">
               <label className="form-label">Plan Title *</label>
               <input
                 className="form-input"
-                placeholder="e.g. Push Pull Legs"
+                placeholder="e.g. 4-Day Muscle Building Split"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Description</label>
+              <label className="form-label">Description (Optional)</label>
               <textarea
                 className="form-textarea"
-                placeholder="Optional notes about this plan…"
+                rows={2}
+                placeholder="e.g. Hypertrophy focus with progressive overload"
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                rows={2}
               />
             </div>
           </div>
 
-          {/* Day tabs */}
-          <div className="card" style={{ marginBottom: 20 }}>
-            <p style={{ fontWeight: 700, marginBottom: 14, fontSize: '0.9rem' }}>
-              Configure each day *
-            </p>
-            <div className="day-tabs" style={{ marginBottom: 16 }}>
-              {DAYS.map((d, i) => (
-                <button
-                  key={d}
-                  className={`day-tab${selectedDay === d ? ' active' : ''}${splits.find(s => s.day === d)?.isRestDay ? ' rest' : ''}`}
-                  onClick={() => setSelectedDay(d)}
-                >
-                  <span style={{ display: 'block' }}>{DAY_SHORT[i]}</span>
-                </button>
-              ))}
+          <div className="card" style={{ marginBottom: 24 }}>
+            <h3 style={{ marginBottom: 16 }}>Configure Days</h3>
+            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8, marginBottom: 16 }}>
+              {DAYS.map((d, i) => {
+                const isSelected = selectedDay === d
+                const isRest = splits.find(s => s.day === d)?.isRestDay
+                return (
+                  <button
+                    key={d}
+                    className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ flex: 1, minWidth: 44 }}
+                    onClick={() => setSelectedDay(d)}
+                  >
+                    {DAY_SHORT[i]} {isRest && '💤'}
+                  </button>
+                )
+              })}
             </div>
 
-            {/* Day config */}
-            <div style={{ padding: '0 4px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{selectedDay}</span>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                  <span style={{ fontSize: '0.85rem', color: currentSplit?.isRestDay ? 'var(--accent)' : 'var(--text-secondary)' }}>Rest Day</span>
-                  <div
-                    style={{
-                      width: 40, height: 22, borderRadius: 11, cursor: 'pointer',
-                      background: currentSplit?.isRestDay ? 'var(--accent)' : 'var(--bg-surface)',
-                      border: '1px solid var(--border)', position: 'relative', transition: 'background 0.2s'
-                    }}
-                    onClick={() => { updateSplit(selectedDay, { isRestDay: !currentSplit?.isRestDay }); setMuscleInput('') }}
-                  >
-                    <div style={{
-                      width: 16, height: 16, borderRadius: '50%', background: 'white',
-                      position: 'absolute', top: 2,
-                      left: currentSplit?.isRestDay ? 20 : 2, transition: 'left 0.2s'
-                    }} />
-                  </div>
-                </label>
+            <div style={{ background: 'var(--bg)', padding: 16, borderRadius: 'var(--radius-md)', border: '1px solid var(--border-secondary)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontWeight: 700, fontSize: '1rem' }}>{selectedDay}</span>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${currentSplit?.isRestDay ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => { updateSplit(selectedDay, { isRestDay: !currentSplit?.isRestDay }); setMuscleInput('') }}
+                >
+                  {currentSplit?.isRestDay ? '✓ Rest Day' : 'Mark as Rest Day'}
+                </button>
               </div>
 
               {!currentSplit?.isRestDay && (
                 <>
-                  <div className="form-group" style={{ marginBottom: 14 }}>
+                  <div className="form-group">
                     <label className="form-label">Session Name</label>
                     <input
                       className="form-input"
-                      placeholder="e.g. Push Day, Chest Day…"
+                      placeholder="e.g. Upper Body Power"
                       value={currentSplit?.name || ''}
                       onChange={e => updateSplit(selectedDay, { name: e.target.value })}
                     />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Muscle Groups *</label>
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
                       {(currentSplit?.muscleGroups || []).map((mg, i) => (
-                        <span key={i} className="chip">
+                        <span key={i} className="status-badge status-active">
                           {mg}
-                          <button className="chip-remove" onClick={() => removeMuscleGroup(i)}>×</button>
+                          <button
+                            type="button"
+                            onClick={() => removeMuscleGroup(i)}
+                            style={{ background: 'none', border: 'none', color: 'var(--accent)', marginLeft: 6, cursor: 'pointer' }}
+                          >
+                            ✕
+                          </button>
                         </span>
                       ))}
                     </div>
@@ -428,10 +433,10 @@ export default function CreatePlan({ isTemplate = false }) {
                         value={muscleInput}
                         onChange={setMuscleInput}
                         suggestions={muscleGroupOptions}
-                        placeholder="Add muscle group…"
+                        placeholder="Add target muscle (Chest, Back...)"
                         onEnter={addMuscleGroup}
                       />
-                      <button className="btn btn-secondary btn-sm" onClick={addMuscleGroup}>
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={addMuscleGroup}>
                         Add
                       </button>
                     </div>
@@ -441,18 +446,12 @@ export default function CreatePlan({ isTemplate = false }) {
             </div>
           </div>
 
-          {!isFormValid && title.trim() && (
-            <p className="hint-text" style={{ marginBottom: 12 }}>
-              Add at least one muscle group for each non-rest day.
-            </p>
-          )}
-
           <button
             className="btn btn-primary btn-full"
             disabled={!isFormValid || saving}
             onClick={handleNext}
           >
-            {saving ? 'Creating…' : 'Next: Add Exercises →'}
+            {saving ? 'Creating Plan...' : 'Next: Add Exercises →'}
           </button>
         </div>
       )}
@@ -460,48 +459,47 @@ export default function CreatePlan({ isTemplate = false }) {
       {/* ─── Step 2: Exercise Builder ─────────────────────────────────────── */}
       {step === 2 && (
         <div>
-          {/* Day tabs */}
-          <div className="day-tabs" style={{ marginBottom: 20 }}>
-            {splitIds.map(({ day, id }, i) => {
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8, marginBottom: 20 }}>
+            {splitIds.map(({ day, id }) => {
               const draft = splitDrafts[id]
               const isRest = draft?.isRestDay
               const isSaved = savedDays[id]
+              const isSelected = selectedDay === day
               return (
                 <button
                   key={day}
-                  className={`day-tab${selectedDay === day ? ' active' : ''}${isRest ? ' rest' : ''}`}
+                  className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ minWidth: 60 }}
                   onClick={() => setSelectedDay(day)}
                 >
-                  {DAY_SHORT[DAYS.indexOf(day)] || day}
-                  {isSaved && !isRest && <span style={{ color: 'var(--success)', marginLeft: 4 }}>✓</span>}
+                  {day.slice(0, 3)} {isSaved && '✓'} {isRest && '💤'}
                 </button>
               )
             })}
           </div>
 
           {!currentDraft ? (
-            <p className="loading-text">Loading day…</p>
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>
+              Loading day...
+            </div>
           ) : currentDraft.isRestDay ? (
             <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-              <div style={{ fontSize: '2rem', marginBottom: 12 }}>🛌</div>
-              <p style={{ color: 'var(--text-muted)' }}>Rest day — nothing to add.</p>
+              <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🛌</div>
+              <p style={{ color: 'var(--text-secondary)' }}>This is marked as a Rest Day.</p>
             </div>
           ) : (
             <div>
-              {/* Target muscle selector */}
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20 }}>
-                <label className="form-label" style={{ whiteSpace: 'nowrap' }}>Target Muscle</label>
+              <div className="form-group" style={{ maxWidth: 280, marginBottom: 20 }}>
+                <label className="form-label">Select Muscle Group</label>
                 <select
                   className="form-select"
                   value={targetMuscle}
                   onChange={e => setTargetMuscle(e.target.value)}
-                  style={{ maxWidth: 200 }}
                 >
                   {currentGroups.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
               </div>
 
-              {/* Exercise cards */}
               {exercisesForTarget.map((ex) => (
                 <ExerciseCard
                   key={ex.id}
@@ -512,33 +510,26 @@ export default function CreatePlan({ isTemplate = false }) {
                 />
               ))}
 
-              <button className="btn btn-secondary" onClick={addExercise} style={{ marginBottom: 20 }}>
+              <button className="btn btn-secondary" onClick={addExercise} style={{ marginBottom: 24 }}>
                 + Add Exercise
               </button>
 
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 <button
                   className="btn btn-secondary"
                   onClick={saveDay}
                   disabled={saving}
                 >
-                  {saving ? 'Saving…' : savedDays[currentDraftId] ? '✓ Saved' : 'Save This Day'}
+                  {saving ? 'Saving Day...' : savedDays[currentDraftId] ? '✓ Saved' : 'Save Day'}
                 </button>
                 <button
                   className="btn btn-primary"
                   onClick={finishPlan}
                   disabled={finishing || !planComplete}
-                  title={planComplete ? '' : 'Add at least one named exercise per muscle group for all non-rest days'}
                 >
-                  {finishing ? 'Saving…' : (isTemplate ? 'Save Template' : 'Finish & Assign')}
+                  {finishing ? 'Saving Plan...' : (isTemplate ? 'Save Template ✓' : 'Finish & Assign ✓')}
                 </button>
               </div>
-              {!planComplete && (
-                <p className="hint-text" style={{ marginTop: 12 }}>
-                  Add at least one named exercise per muscle group for every non-rest day.
-                </p>
-              )}
             </div>
           )}
         </div>

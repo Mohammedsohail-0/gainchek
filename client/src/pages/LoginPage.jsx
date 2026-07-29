@@ -66,49 +66,52 @@ export default function LoginPage() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">
-          <span>Gain</span><span className="logo-accent">Chek</span>
+          GainChek <span className="tick-mark">✓</span>
         </div>
-        <h2>Welcome back</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: 8 }}>Welcome back</h2>
         <p className="auth-subtitle">
-          Sign in with Google or use Quick Demo Sign In. New here? Your account is created automatically.
+          Sign in to your account. Select your role below.
         </p>
 
         {!isGoogleConfigured && (
           <div style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: 'var(--r-md, 8px)',
-            padding: '10px 14px',
-            marginBottom: 16,
-            fontSize: '0.8rem',
-            color: '#fca5a5'
+            background: 'var(--surface-hover)',
+            border: '1px solid var(--border-secondary)',
+            borderRadius: 'var(--radius-md)',
+            padding: '12px 14px',
+            marginBottom: 20,
+            fontSize: '0.85rem',
+            color: 'var(--text-secondary)'
           }}>
-            ⚠️ Google Client ID is unconfigured in <code>client/.env</code>. You can use <strong>Quick Demo Sign In</strong> below!
+            💡 Google Sign-In unconfigured. Use <strong>Quick Demo Sign In</strong> below.
           </div>
         )}
 
-        {error && <p className="error-text" style={{ marginBottom: 16 }}>{error}</p>}
+        {error && (
+          <div className="form-error" style={{ marginBottom: 16, textAlign: 'center' }}>
+            ⚠️ {error}
+          </div>
+        )}
 
-        {/* Role selector — only for new account creation guidance */}
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 10, fontWeight: 600 }}>
-          SIGN IN AS
-        </p>
-        <div className="role-selector" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: 20 }}>
-          {ROLES.map(r => (
-            <button
-              key={r.value}
-              className={`role-option${selectedRole === r.value ? ' selected' : ''}`}
-              onClick={() => setSelectedRole(r.value)}
-              type="button"
-            >
-              <span className="role-icon">{r.icon}</span>
-              {r.label}
-            </button>
-          ))}
+        <div style={{ marginBottom: 16 }}>
+          <label className="form-label">Select Role</label>
+          <div className="role-selector">
+            {ROLES.map(r => (
+              <button
+                key={r.value}
+                className={`role-option${selectedRole === r.value ? ' selected' : ''}`}
+                onClick={() => setSelectedRole(r.value)}
+                type="button"
+              >
+                <span style={{ fontSize: '1.5rem' }}>{r.icon}</span>
+                <span>{r.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {selectedRole === 'GYM_OWNER' && (
-          <div className="form-group" style={{ marginBottom: 20 }}>
+          <div className="form-group">
             <label className="form-label">Gym Name (optional)</label>
             <input
               className="form-input"
@@ -116,13 +119,13 @@ export default function LoginPage() {
               value={gymName}
               onChange={e => setGymName(e.target.value)}
             />
-            <p className="hint-text" style={{ marginTop: 4 }}>Leave blank to use your name</p>
+            <span className="form-help">Leave blank to use default name</span>
           </div>
         )}
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
-            <span className="spinner" />
+          <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--text-secondary)' }}>
+            Signing in...
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -144,8 +147,8 @@ export default function LoginPage() {
           </div>
         )}
 
-        <p style={{ marginTop: 24, fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-          Client? Use the invite link from your trainer.
+        <p style={{ marginTop: 24, fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
+          Client? Ask your trainer for an invite link to register.
         </p>
       </div>
     </div>

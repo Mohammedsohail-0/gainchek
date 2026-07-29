@@ -10,7 +10,7 @@ export default function TemplateList() {
   const [loading, setLoading] = useState(true)
 
   // Assign dialog
-  const [assignTemplate, setAssignTemplate] = useState(null) // template to assign
+  const [assignTemplate, setAssignTemplate] = useState(null)
   const [selectedClientId, setSelectedClientId] = useState('')
   const [assigning, setAssigning] = useState(false)
 
@@ -26,17 +26,19 @@ export default function TemplateList() {
     ]).then(([tmplRes, clientRes]) => {
       setTemplates(tmplRes.data)
       setClients(clientRes.data)
-    }).catch(() => toast.error('Failed to load'))
+    }).catch(() => toast.error('Failed to load templates'))
       .finally(() => setLoading(false))
   }, [])
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this template? Assigned plans (already cloned) will NOT be deleted.')) return
+    if (!confirm('Delete this template? Already assigned client plans will not be affected.')) return
     try {
       await api.delete(`/workout/plan/${id}`)
       setTemplates(prev => prev.filter(t => t.id !== id))
       toast.success('Template deleted')
-    } catch { toast.error('Failed to delete') }
+    } catch {
+      toast.error('Failed to delete template')
+    }
   }
 
   const handleAssign = async () => {
@@ -44,11 +46,11 @@ export default function TemplateList() {
     setAssigning(true)
     try {
       await api.post(`/workout/plan/${assignTemplate.id}/assign`, { clientId: selectedClientId })
-      toast.success('Template assigned!')
+      toast.success('Template assigned to client ✓')
       setAssignTemplate(null)
       setSelectedClientId('')
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to assign')
+      toast.error(err.response?.data?.error || 'Failed to assign template')
     } finally {
       setAssigning(false)
     }
@@ -60,18 +62,29 @@ export default function TemplateList() {
     try {
       const res = await api.post(`/workout/plan/${pushTemplate.id}/push`)
       setPushResult(res.data)
-    } catch { toast.error('Push failed') }
-    finally { setPushing(false) }
+      toast.success('Pushed updates to active plans ✓')
+    } catch {
+      toast.error('Push failed')
+    } finally {
+      setPushing(false)
+    }
   }
 
-  if (loading) return <p className="loading-text">Loading templates...</p>
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-secondary)' }}>
+        Loading workout templates...
+      </div>
+    )
+  }
 
   return (
-    <div style={{ animation: 'fadeSlideUp 0.3s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1 className="page-title">Templates</h1>
-          <p className="page-subtitle">Reusable workout plans you can assign to multiple clients.</p>
+          <h1 className="page-title">Workout Templates</h1>
+          <p>Reusable workout splits and programs for quick assignment.</p>
         </div>
         <button className="btn btn-primary" onClick={() => navigate('/coach/templates/create')}>
           + New Template
@@ -81,42 +94,46 @@ export default function TemplateList() {
       {templates.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">📋</div>
-          <p style={{ marginBottom: 16 }}>No templates yet. Create one to reuse across clients.</p>
-          <button className="btn btn-primary" onClick={() => navigate('/coach/templates/create')}>
-            Create Template
+          <div className="empty-title">No templates yet — create your first template</div>
+          <div className="empty-text">
+            Templates let you quickly assign structured 3-day, 4-day, or PPL workout splits to any client.
+          </div>
+          <button className="btn btn-primary" onClick={() => navigate('/coach/templates/create')} style={{ marginTop: 8 }}>
+            + Create First Template
           </button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {templates.map(t => (
-            <div key={t.id} className="card">
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: 4 }}>{t.title}</div>
+            <div key={t.id} className="card" style={{ marginBottom: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+                <div style={{ flex: 1, minWidth: 240 }}>
+                  <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: 4 }}>{t.title}</div>
                   {t.description && (
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 10 }}>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 12 }}>
                       {t.description}
                     </p>
                   )}
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    <span className="chip">
-                      {(t.workoutSplits || []).filter(s => !s.isRestDay).length} training days
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <span className="status-badge status-active">
+                      <span className="tick-mark">✓</span> {(t.workoutSplits || []).filter(s => !s.isRestDay).length} Workout Days
                     </span>
-                    <span className="chip" style={{ background: 'rgba(59,130,246,0.12)', color: 'var(--info)' }}>
-                      {t._count?.clones || 0} assigned
+                    <span className="status-badge status-inactive">
+                      👥 {t._count?.clones || 0} Assigned
                     </span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
-                      {new Date(t.createdAt).toLocaleDateString()}
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center' }}>
+                      Created {new Date(t.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
-                  <button className="btn btn-outline btn-sm" onClick={() => { setAssignTemplate(t); setSelectedClientId('') }}>
-                    Assign
+
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className="btn btn-secondary btn-sm" onClick={() => { setAssignTemplate(t); setSelectedClientId('') }}>
+                    Assign Plan
                   </button>
                   {(t._count?.clones || 0) > 0 && (
                     <button className="btn btn-secondary btn-sm" onClick={() => { setPushTemplate(t); setPushResult(null) }}>
-                      Push Update
+                      Push Updates
                     </button>
                   )}
                   <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/coach/templates/${t.id}/edit`)}>
@@ -132,70 +149,89 @@ export default function TemplateList() {
         </div>
       )}
 
-      {/* ─── Assign Dialog ──────────────────────────────────────────────────── */}
+      {/* Assign Modal */}
       {assignTemplate && (
-        <div className="dialog-backdrop" onClick={() => setAssignTemplate(null)}>
-          <div className="dialog" onClick={e => e.stopPropagation()}>
-            <h3>Assign Template</h3>
-            <p>Choose a client to assign <strong>{assignTemplate.title}</strong> to. Their current active plan will be deactivated.</p>
-            <div className="form-group" style={{ marginBottom: 20 }}>
-              <label className="form-label">Client</label>
+        <div className="sidebar-overlay mobile-open" onClick={() => setAssignTemplate(null)}>
+          <div
+            className="card"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '90%',
+              maxWidth: 480,
+              zIndex: 210,
+              margin: 0
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: 12 }}>Assign Template</h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 20 }}>
+              Assign <strong>{assignTemplate.title}</strong> to a client. This will set their active workout plan.
+            </p>
+
+            <div className="form-group">
+              <label className="form-label">Select Client</label>
               <select className="form-select" value={selectedClientId} onChange={e => setSelectedClientId(e.target.value)}>
-                <option value="">Select client…</option>
+                <option value="">Select client...</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
-            <div className="dialog-actions">
-              <button className="btn btn-secondary" onClick={() => setAssignTemplate(null)}>Cancel</button>
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
+              <button className="btn btn-secondary" onClick={() => setAssignTemplate(null)}>
+                Cancel
+              </button>
               <button className="btn btn-primary" disabled={!selectedClientId || assigning} onClick={handleAssign}>
-                {assigning ? 'Assigning…' : 'Assign Plan'}
+                {assigning ? 'Assigning...' : 'Assign Plan ✓'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ─── Push Dialog ─────────────────────────────────────────────────────── */}
+      {/* Push Updates Modal */}
       {pushTemplate && (
-        <div className="dialog-backdrop" onClick={() => setPushTemplate(null)}>
-          <div className="dialog" onClick={e => e.stopPropagation()}>
-            <h3>Push Template Update</h3>
+        <div className="sidebar-overlay mobile-open" onClick={() => setPushTemplate(null)}>
+          <div
+            className="card"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '90%',
+              maxWidth: 480,
+              zIndex: 210,
+              margin: 0
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: 12 }}>Push Template Updates</h3>
             {pushResult ? (
-              <>
-                <div style={{ background: 'var(--accent-dim)', borderRadius: 'var(--r-md)', padding: '16px', marginBottom: 20 }}>
-                  <p style={{ color: 'var(--accent)', fontWeight: 600, marginBottom: 8 }}>
-                    ✓ Updated {pushResult.updated} of {pushResult.total} clients
+              <div>
+                <div style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: 20 }}>
+                  <p style={{ color: 'var(--accent)', fontWeight: 600 }}>
+                    ✓ Updated {pushResult.updated} of {pushResult.total} assigned client plans.
                   </p>
-                  {pushResult.failed?.length > 0 && (
-                    <div>
-                      <p style={{ color: 'var(--warning)', fontSize: '0.85rem', marginBottom: 8 }}>
-                        Failed for:
-                      </p>
-                      {pushResult.failed.map((f, i) => (
-                        <div key={i} style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                          {f.clientName}: {f.reason}
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
-                <div className="dialog-actions">
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button className="btn btn-secondary" onClick={() => setPushTemplate(null)}>Close</button>
                 </div>
-              </>
+              </div>
             ) : (
-              <>
-                <p>This will sync changes from <strong>{pushTemplate.title}</strong> to all {pushTemplate._count?.clones || 0} clients who have this template assigned.</p>
-                <p style={{ color: 'var(--warning)', fontSize: '0.85rem', marginTop: 8 }}>
-                  Exercises with existing logs will be archived, not deleted.
+              <div>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 20 }}>
+                  Sync updates from <strong>{pushTemplate.title}</strong> to all {pushTemplate._count?.clones || 0} clients currently using this template.
                 </p>
-                <div className="dialog-actions" style={{ marginTop: 20 }}>
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
                   <button className="btn btn-secondary" onClick={() => setPushTemplate(null)}>Cancel</button>
                   <button className="btn btn-primary" onClick={handlePush} disabled={pushing}>
-                    {pushing ? 'Pushing…' : 'Push Updates'}
+                    {pushing ? 'Pushing...' : 'Push Updates ✓'}
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>

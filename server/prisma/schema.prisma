@@ -79,8 +79,8 @@ model ClientProfile {
   id         String     @id @default(uuid())
   userId     String     @unique
   user       User       @relation(fields: [userId], references: [id])
-  coachId    String
-  coach      CoachProfile @relation(fields: [coachId], references: [id])
+  coachId    String?
+  coach      CoachProfile? @relation(fields: [coachId], references: [id])
   name       String
   goal       ClientGoal?
   age        Int?

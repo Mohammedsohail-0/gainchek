@@ -1,0 +1,32 @@
+.quick-stats-container{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(30px, 1fr));
+    gap: 16;
+    margin-bottom: 28px;
+}
+
+.quick-action-container{
+    margin-block: 5rem;
+}
+.quick-action-container h3{
+    margin-bottom: 1rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background-color: var(--surface);
+  border-radius: var(--radius-card); /* 12px */
+  padding: var(--space-4); /* Min 16px internal padding */
+  box-sizing: border-box;
+  margin-bottom: var(--space-4);
+}
+.quick-action{
+    flex-direction: row;
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: var(--space-5); /* 24px on desktop */
+  }
+}

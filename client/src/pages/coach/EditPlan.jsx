@@ -5,13 +5,12 @@ import api from '../../services/api'
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-// ─── Autocomplete (shared) ────────────────────────────────────────────────────
 function Autocomplete({ value, onChange, suggestions = [], placeholder }) {
   const [open, setOpen] = useState(false)
   const filtered = !value.trim() ? [] : suggestions.filter(s => s.toLowerCase().includes(value.toLowerCase())).slice(0, 10)
 
   return (
-    <div className="autocomplete-wrapper">
+    <div style={{ position: 'relative', width: '100%' }}>
       <input
         className="form-input"
         value={value}
@@ -21,9 +20,23 @@ function Autocomplete({ value, onChange, suggestions = [], placeholder }) {
         onBlur={() => setTimeout(() => setOpen(false), 150)}
       />
       {open && filtered.length > 0 && (
-        <div className="autocomplete-dropdown">
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0, right: 0,
+          background: 'var(--surface)',
+          border: '1px solid var(--border-secondary)',
+          borderRadius: 'var(--radius-md)',
+          zIndex: 50,
+          maxHeight: 180,
+          overflowY: 'auto'
+        }}>
           {filtered.map(s => (
-            <div key={s} className="autocomplete-item" onMouseDown={() => { onChange(s); setOpen(false) }}>
+            <div
+              key={s}
+              style={{ padding: '10px 14px', cursor: 'pointer', fontSize: '0.875rem', borderBottom: '1px solid var(--border-secondary)' }}
+              onMouseDown={() => { onChange(s); setOpen(false) }}
+            >
               {s}
             </div>
           ))}
@@ -43,12 +56,11 @@ export default function EditPlan({ isTemplate = false }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [exerciseOptions, setExerciseOptions] = useState([])
-  const [localExercises, setLocalExercises] = useState({}) // {splitId: exercises[]}
+  const [localExercises, setLocalExercises] = useState({})
   const [savedSplits, setSavedSplits] = useState({})
 
   useEffect(() => {
-    const actualPlanId = planId
-    api.get(`/workout/plan/${actualPlanId}`).then(res => {
+    api.get(`/workout/plan/${planId}`).then(res => {
       setPlan(res.data)
       const activeSplits = res.data.workoutSplits || []
       const ordered = DAYS.map(d => activeSplits.find(s => s.day?.toLowerCase() === d.toLowerCase())).filter(Boolean)
@@ -110,7 +122,7 @@ export default function EditPlan({ isTemplate = false }) {
       }))
       await api.post(`/workout/split/${currentSplit.id}/exercises`, { exercises: payload })
       setSavedSplits(prev => ({ ...prev, [currentSplit.id]: true }))
-      toast.success(`${currentSplit.day} saved`)
+      toast.success(`${currentSplit.day} saved ✓`)
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to save')
     } finally {
@@ -123,93 +135,116 @@ export default function EditPlan({ isTemplate = false }) {
     else navigate(`/coach/clients/${clientId}`)
   }
 
-  if (loading) return <p className="loading-text">Loading plan…</p>
+  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Loading plan details...</div>
 
   return (
-    <div style={{ maxWidth: 780, margin: '0 auto', padding: '24px 20px', animation: 'fadeSlideUp 0.3s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
-        <button className="btn btn-secondary btn-sm" onClick={finishEditing}>← Back</button>
-        <h1 style={{ fontWeight: 800, fontSize: '1.4rem' }}>
-          Edit: {plan?.title}
-        </h1>
+    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="btn btn-secondary btn-sm" onClick={finishEditing}>← Back</button>
+          <h1 className="page-title" style={{ marginBottom: 0 }}>Edit: {plan?.title}</h1>
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={finishEditing}>Done Editing ✓</button>
       </div>
 
       {/* Day Tabs */}
-      <div className="day-tabs" style={{ marginBottom: 24 }}>
-        {splits.map(s => (
-          <button
-            key={s.id}
-            className={`day-tab${selectedDay === s.id ? ' active' : ''}${s.isRestDay ? ' rest' : ''}`}
-            onClick={() => setSelectedDay(s.id)}
-          >
-            {s.day?.slice(0, 2)}
-            {savedSplits[s.id] && !s.isRestDay && (
-              <span style={{ color: 'var(--success)', marginLeft: 4 }}>✓</span>
-            )}
-          </button>
-        ))}
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8, marginBottom: 20 }}>
+        {splits.map(s => {
+          const isSelected = selectedDay === s.id
+          return (
+            <button
+              key={s.id}
+              className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ minWidth: 60 }}
+              onClick={() => setSelectedDay(s.id)}
+            >
+              {s.day?.slice(0, 3)} {savedSplits[s.id] && '✓'} {s.isRestDay && '💤'}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Day Editor */}
-      {!currentSplit ? (
-        <p className="loading-text">Select a day above</p>
-      ) : currentSplit.isRestDay ? (
+      {!currentSplit ? null : currentSplit.isRestDay ? (
         <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: '2rem', marginBottom: 12 }}>🛌</div>
-          <p style={{ color: 'var(--text-muted)' }}>Rest day — nothing to add.</p>
+          <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🛌</div>
+          <p style={{ color: 'var(--text-secondary)' }}>Rest Day — no exercises required.</p>
         </div>
       ) : (
         <div>
-          <div className="section-header" style={{ marginBottom: 16 }}>
-            <div>
-              <div className="section-title">{currentSplit.day} — {currentSplit.name || currentSplit.muscleGroups}</div>
-            </div>
-          </div>
-
-          {/* Exercise list */}
           {currentExercises.map((ex, idx) => (
-            <div key={ex.id} className="exercise-block">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <div key={ex.id || idx} className="card" style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                 <div style={{ flex: 1 }}>
                   <Autocomplete
                     value={ex.name}
                     onChange={v => updateExercise(idx, { name: v })}
                     suggestions={exerciseOptions}
-                    placeholder="Exercise name…"
+                    placeholder="Exercise name..."
                   />
                 </div>
-                <button className="btn btn-danger btn-sm" onClick={() => removeExercise(idx)}>×</button>
+                <button className="btn btn-danger btn-sm" onClick={() => removeExercise(idx)}>✕</button>
               </div>
-              {/* Sets */}
-              <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 36px', gap: 6, marginBottom: 8 }}>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 40px', gap: 8, marginBottom: 8 }}>
                 {['SET', 'KG', 'REPS', ''].map((h, i) => (
-                  <span key={i} style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', textAlign: 'center' }}>{h}</span>
+                  <span key={i} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700, textAlign: 'center' }}>{h}</span>
                 ))}
               </div>
-              {(ex.sets || []).map((s, si) => (
-                <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 36px', gap: 6, marginBottom: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{s.setNumber}</div>
-                  <input className="form-input" type="number" value={s.weight} onChange={e => updateExercise(idx, ex => ({ ...ex, sets: ex.sets.map((ss, j) => j === si ? { ...ss, weight: e.target.value } : ss) }))} placeholder="—" style={{ padding: '7px 10px', textAlign: 'center' }} />
-                  <input className="form-input" type="number" value={s.reps} onChange={e => updateExercise(idx, ex => ({ ...ex, sets: ex.sets.map((ss, j) => j === si ? { ...ss, reps: e.target.value } : ss) }))} placeholder="—" style={{ padding: '7px 10px', textAlign: 'center' }} />
-                  <button style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1rem' }} onClick={() => updateExercise(idx, ex => ({ ...ex, sets: ex.sets.filter((_, j) => j !== si).map((ss, j) => ({ ...ss, setNumber: j + 1 })) }))}>×</button>
+
+              {(ex.sets || []).map((s, sIdx) => (
+                <div key={s.id || sIdx} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 40px', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                  <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{s.setNumber}</div>
+                  <input
+                    className="form-input"
+                    type="number"
+                    value={s.weight}
+                    onChange={e => updateExercise(idx, ex => ({
+                      ...ex, sets: ex.sets.map((st, i) => i === sIdx ? { ...st, weight: e.target.value } : st)
+                    }))}
+                    placeholder="—"
+                    style={{ textAlign: 'center', minHeight: 40, padding: '4px 8px' }}
+                  />
+                  <input
+                    className="form-input"
+                    type="number"
+                    value={s.reps}
+                    onChange={e => updateExercise(idx, ex => ({
+                      ...ex, sets: ex.sets.map((st, i) => i === sIdx ? { ...st, reps: e.target.value } : st)
+                    }))}
+                    placeholder="—"
+                    style={{ textAlign: 'center', minHeight: 40, padding: '4px 8px' }}
+                  />
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => updateExercise(idx, ex => ({
+                      ...ex, sets: ex.sets.filter((_, i) => i !== sIdx).map((st, i) => ({ ...st, setNumber: i + 1 }))
+                    }))}
+                    style={{ minHeight: 36, padding: '4px 8px' }}
+                  >
+                    ✕
+                  </button>
                 </div>
               ))}
-              <button className="btn btn-secondary btn-sm" style={{ marginTop: 6, fontSize: '0.78rem' }} onClick={() => updateExercise(idx, ex => ({ ...ex, sets: [...ex.sets, { id: crypto.randomUUID(), setNumber: ex.sets.length + 1, reps: '', weight: '' }] }))}>
+
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => updateExercise(idx, ex => ({
+                  ...ex, sets: [...(ex.sets || []), { id: crypto.randomUUID(), setNumber: (ex.sets || []).length + 1, reps: '', weight: '' }]
+                }))}
+                style={{ marginTop: 8 }}
+              >
                 + Add Set
               </button>
             </div>
           ))}
 
-          <button className="btn btn-secondary" onClick={addExercise} style={{ marginBottom: 20 }}>
+          <button className="btn btn-secondary" onClick={addExercise} style={{ marginBottom: 24 }}>
             + Add Exercise
           </button>
 
-          <div style={{ display: 'flex', gap: 12 }}>
-            <button className="btn btn-secondary" onClick={saveCurrentDay} disabled={saving}>
-              {saving ? 'Saving…' : savedSplits[currentSplit?.id] ? '✓ Saved' : 'Save This Day'}
-            </button>
-            <button className="btn btn-primary" onClick={finishEditing}>
-              Done Editing
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <button className="btn btn-primary" onClick={saveCurrentDay} disabled={saving}>
+              {saving ? 'Saving...' : 'Save Day Changes ✓'}
             </button>
           </div>
         </div>

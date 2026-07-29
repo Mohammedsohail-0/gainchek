@@ -1,0 +1,13 @@
+table {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: separate;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+thead th {
+    font-weight: 400;
+    font-size: small;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+}

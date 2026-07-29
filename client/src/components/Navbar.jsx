@@ -7,19 +7,14 @@ const ROLE_LABEL = {
   client: 'Client',
 }
 
-const ROLE_BADGE_CLASS = {
-  gym_owner: 'role-badge-gym_owner',
-  coach: 'role-badge-coach',
-  client: 'role-badge-client',
-}
-
 const COACH_LINKS = [
   { to: '/coach', label: 'Dashboard' },
   { to: '/coach/templates', label: 'Templates' },
 ]
 
-const GYM_LINKS = [
-  { to: '/gym', label: 'Overview' },
+const CLIENT_LINKS = [
+  { to: '/client', label: 'Home' },
+  { to: '/client/plan', label: 'My Plan' },
 ]
 
 export default function Navbar() {
@@ -28,54 +23,57 @@ export default function Navbar() {
   const navigate = useNavigate()
 
   const r = role?.toLowerCase()
-  const links = r === 'coach' ? COACH_LINKS : r === 'gym_owner' ? GYM_LINKS : []
+  const links = r === 'coach' ? COACH_LINKS : r === 'client' ? CLIENT_LINKS : []
 
   const handleLogout = () => {
     logout()
     navigate('/login')
   }
 
-  const isActive = (path) =>
-    path === '/coach' || path === '/gym'
-      ? location.pathname === path
-      : location.pathname.startsWith(path)
+  const isActive = (path) => {
+    if (path === '/coach' || path === '/client') {
+      return location.pathname === path
+    }
+    return location.pathname.startsWith(path)
+  }
 
   return (
     <nav className="navbar">
-      <Link
-        to={r === 'gym_owner' ? '/gym' : r === 'coach' ? '/coach' : '/client'}
-        className="navbar-brand"
-        style={{ textDecoration: 'none' }}
-      >
-        <span className="brand-dot" />
-        GainChek
-      </Link>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+        <Link
+          to={r === 'gym_owner' ? '/gym' : r === 'coach' ? '/coach' : '/client'}
+          className="navbar-brand"
+          style={{ textDecoration: 'none' }}
+        >
+          GainChek <span className="tick-mark">✓</span>
+        </Link>
 
-      {links.length > 0 && (
-        <div className="navbar-links">
-          {links.map(l => (
-            <Link
-              key={l.to}
-              to={l.to}
-              className={`nav-link${isActive(l.to) ? ' active' : ''}`}
-            >
-              {l.label}
-            </Link>
-          ))}
-        </div>
-      )}
+        {links.length > 0 && (
+          <div className="navbar-links">
+            {links.map(l => (
+              <Link
+                key={l.to}
+                to={l.to}
+                className={`nav-link${isActive(l.to) ? ' active' : ''}`}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="navbar-actions">
-        <span className={`navbar-role-badge ${ROLE_BADGE_CLASS[r] || ''}`}>
+        <span className={`role-badge role-${r || 'client'}`}>
           {ROLE_LABEL[r] || r}
         </span>
         {name && (
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'none', minWidth: 0 }}>
             {name}
           </span>
         )}
         <button className="btn btn-secondary btn-sm" onClick={handleLogout}>
-          Sign out
+          Sign Out
         </button>
       </div>
     </nav>

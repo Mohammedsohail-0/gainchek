@@ -21,19 +21,27 @@ export default function ClientPlan() {
       })
       .catch(err => {
         if (err.response?.status === 404) return
-        toast.error("Couldn't load your plan")
+        toast.error("Couldn't load active plan")
       })
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <p className="loading-text">Loading your plan...</p>
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-secondary)' }}>
+        Loading workout schedule...
+      </div>
+    )
+  }
+
   if (!plan) {
     return (
       <div>
-        <h1 className="page-title">My Plan</h1>
-        <div className="empty-state" style={{ marginTop: 32 }}>
+        <h1 className="page-title">My Workout Plan</h1>
+        <div className="empty-state" style={{ marginTop: 24 }}>
           <div className="empty-icon">📋</div>
-          <p>No active plan yet. Your trainer will assign one shortly.</p>
+          <div className="empty-title">No Active Plan Assigned</div>
+          <div className="empty-text">Your trainer hasn't set up a workout plan for you yet. Reach out to your coach to get started!</div>
         </div>
       </div>
     )
@@ -46,89 +54,93 @@ export default function ClientPlan() {
   const currentSplit = ordered.find(s => s.id === selectedSplitId)
 
   return (
-    <div style={{ animation: 'fadeSlideUp 0.3s ease' }}>
-      <h1 className="page-title">{plan.title}</h1>
-      {plan.description && (
-        <p className="page-subtitle">{plan.description}</p>
-      )}
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h1 className="page-title">{plan.title}</h1>
+        {plan.description && (
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{plan.description}</p>
+        )}
+      </div>
 
-      {/* Day Tabs */}
-      <div className="day-tabs" style={{ marginBottom: 24 }}>
+      {/* Day Split Tabs */}
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8, marginBottom: 24 }}>
         {ordered.map(s => {
           const isToday = s.day?.toLowerCase() === DAYS[new Date().getDay()].toLowerCase()
+          const isSelected = selectedSplitId === s.id
           return (
             <button
               key={s.id}
-              className={`day-tab${selectedSplitId === s.id ? ' active' : ''}${s.isRestDay ? ' rest' : ''}`}
+              className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ minWidth: 60, position: 'relative' }}
               onClick={() => setSelectedSplitId(s.id)}
-              style={{ position: 'relative' }}
             >
-              {s.day?.slice(0, 2)}
+              {s.day?.slice(0, 3)} {s.isRestDay ? '💤' : ''}
               {isToday && (
-                <div style={{
-                  position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)',
-                  width: 4, height: 4, borderRadius: '50%', background: 'var(--accent)'
-                }} />
+                <span className="tick-mark" style={{ fontSize: '0.75rem', marginLeft: 4 }}>
+                  ✓
+                </span>
               )}
             </button>
           )
         })}
       </div>
 
-      {/* Day Detail */}
-      {!currentSplit ? (
-        <p className="hint-text">Select a day above.</p>
-      ) : currentSplit.isRestDay ? (
+      {/* Day Detail View */}
+      {!currentSplit ? null : currentSplit.isRestDay ? (
         <div className="card" style={{ textAlign: 'center', padding: 40 }}>
           <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🛌</div>
-          <h3 style={{ fontWeight: 700, marginBottom: 8 }}>Rest Day</h3>
-          <p style={{ color: 'var(--text-muted)' }}>Recovery is part of the program. Enjoy!</p>
+          <h3 style={{ fontSize: '1.2rem', marginBottom: 4 }}>Rest & Recovery Day</h3>
+          <p style={{ color: 'var(--text-secondary)' }}>Focus on nutrition, hydration, and sleep to maximize gains.</p>
         </div>
       ) : (
         <div>
-          <div className="section-header" style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <div className="section-title">{currentSplit.name || `${currentSplit.day} Workout`}</div>
+              <h2 style={{ fontSize: '1.25rem' }}>{currentSplit.name || `${currentSplit.day} Session`}</h2>
               {currentSplit.muscleGroups && (
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: 4 }}>
-                  {currentSplit.muscleGroups}
-                </div>
-              )}
-            </div>
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => navigate(`/client/log/${currentSplit.id}`)}
-            >
-              Log Workout →
-            </button>
-          </div>
-
-          {(currentSplit.exercises || []).filter(ex => !ex.isArchived).map((ex) => (
-            <div key={ex.id} className="card" style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontWeight: 700 }}>{ex.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ex.muscleGroup}</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {(ex.exerciseSets || []).map(s => (
-                  <div key={s.id} style={{
-                    background: 'var(--bg-surface)', border: '1px solid var(--border)',
-                    borderRadius: 'var(--r-sm)', padding: '6px 12px',
-                    fontSize: '0.8rem', color: 'var(--text-secondary)'
-                  }}>
-                    Set {s.setNumber}: {s.reps} reps{s.weight != null ? ` @ ${s.weight}kg` : ''}
-                  </div>
-                ))}
-              </div>
-              {ex.notes && (
-                <p style={{ marginTop: 10, color: 'var(--text-muted)', fontSize: '0.78rem', fontStyle: 'italic' }}>
-                  {ex.notes}
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                  🎯 {currentSplit.muscleGroups}
                 </p>
               )}
             </div>
-          ))}
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate(`/client/log/${currentSplit.id}`)}
+            >
+              Log Workout Session →
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {(currentSplit.exercises || []).filter(ex => !ex.isArchived).map((ex) => (
+              <div key={ex.id} className="card" style={{ marginBottom: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div>
+                    <h3 style={{ fontSize: '1rem' }}>{ex.name}</h3>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{ex.muscleGroup}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {(ex.exerciseSets || []).map(s => (
+                    <div
+                      key={s.id}
+                      style={{
+                        background: 'var(--bg)',
+                        border: '1px solid var(--border-secondary)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '6px 12px',
+                        fontSize: '0.85rem',
+                        color: 'var(--text-primary)'
+                      }}
+                    >
+                      Set {s.setNumber}: <strong>{s.reps} reps</strong> {s.weight != null ? `@ ${s.weight}kg` : ''}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

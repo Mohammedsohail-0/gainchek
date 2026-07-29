@@ -3,47 +3,55 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import api from '../../services/api'
 
-function CheckIcon() {
+function SetRow({ setIdx, set, loggedSet, onUpdate, onCheck }) {
+  const isDone = loggedSet?.done
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 6L9 17l-5-5" />
-    </svg>
-  )
-}
-
-function SetRow({ exercise, setIdx, set, loggedSet, onUpdate, onCheck }) {
-  return (
-    <div className={`log-set-row${loggedSet?.done ? ' done' : ''}`}>
-      {/* Set number */}
-      <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '40px 1fr 1fr 48px',
+      gap: 8,
+      marginBottom: 8,
+      alignItems: 'center',
+      padding: '6px 8px',
+      borderRadius: 'var(--radius-md)',
+      background: isDone ? 'var(--accent-dim)' : 'transparent',
+      border: `1px solid ${isDone ? 'var(--accent)' : 'transparent'}`,
+      transition: 'all var(--transition-fast)'
+    }}>
+      {/* Set Number */}
+      <div style={{ textAlign: 'center', color: isDone ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: 700, fontSize: '0.85rem' }}>
         {set.setNumber}
       </div>
 
-      {/* Weight */}
+      {/* Weight Input */}
       <input
-        className="reps-input"
+        className="form-input"
         type="number"
         value={loggedSet?.weight ?? set.weight ?? ''}
         onChange={e => onUpdate(setIdx, 'weight', e.target.value)}
         placeholder={set.weight != null ? `${set.weight}` : '—'}
+        style={{ textAlign: 'center', minHeight: 40, padding: '4px 8px' }}
       />
 
-      {/* Reps */}
+      {/* Reps Input */}
       <input
-        className="reps-input"
+        className="form-input"
         type="number"
         value={loggedSet?.reps ?? set.reps ?? ''}
         onChange={e => onUpdate(setIdx, 'reps', e.target.value)}
         placeholder={set.reps || '—'}
+        style={{ textAlign: 'center', minHeight: 40, padding: '4px 8px' }}
       />
 
-      {/* Check */}
+      {/* Check Mark Button */}
       <button
-        className={`set-checkbox${loggedSet?.done ? ' checked' : ''}`}
+        type="button"
+        className={`btn btn-sm ${isDone ? 'btn-primary' : 'btn-secondary'}`}
         onClick={() => onCheck(setIdx)}
-        aria-label={loggedSet?.done ? 'Undo' : 'Mark done'}
+        aria-label={isDone ? 'Mark set incomplete' : 'Mark set completed'}
+        style={{ minHeight: 40, width: 44, padding: 0, fontSize: '1.1rem' }}
       >
-        {loggedSet?.done && <CheckIcon />}
+        {isDone ? '✓' : ''}
       </button>
     </div>
   )
@@ -63,7 +71,6 @@ export default function ClientWorkoutLog() {
   const [logState, setLogState] = useState({})
 
   useEffect(() => {
-    // Load the plan and find the split
     const load = async () => {
       try {
         const planRes = await api.get('/client/plan')
@@ -72,7 +79,6 @@ export default function ClientWorkoutLog() {
         if (!found) throw new Error('Split not found')
         setSplit(found)
 
-        // Initialise log state from prescribed sets
         const init = {}
         ;(found.exercises || []).filter(ex => !ex.isArchived).forEach(ex => {
           init[ex.id] = (ex.exerciseSets || []).map(s => ({
@@ -83,7 +89,7 @@ export default function ClientWorkoutLog() {
         })
         setLogState(init)
       } catch {
-        toast.error("Couldn't load workout")
+        toast.error("Couldn't load workout session")
       } finally {
         setLoading(false)
       }
@@ -106,9 +112,8 @@ export default function ClientWorkoutLog() {
   }, [])
 
   const totalSets = split ? (split.exercises || []).filter(ex => !ex.isArchived).reduce((acc, ex) => acc + (ex.exerciseSets?.length || 0), 0) : 0
-
   const doneSets = Object.values(logState).reduce((acc, sets) => acc + sets.filter(s => s.done).length, 0)
-  const progress = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0
+  const progressPercent = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0
 
   const handleSubmit = async () => {
     if (!split || !plan) return
@@ -128,7 +133,7 @@ export default function ClientWorkoutLog() {
     })
 
     if (exercises.length === 0) {
-      toast.error('Check off at least one set to log the workout.')
+      toast.error('Tap ✓ to complete at least one set before logging.')
       return
     }
 
@@ -140,81 +145,105 @@ export default function ClientWorkoutLog() {
         note: note.trim() || null,
         exercises,
       })
-      toast.success('Workout logged! Great work 💪')
+      toast.success('Workout logged! Great session ✓')
       navigate('/client')
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to save workout')
+      toast.error(err.response?.data?.error || 'Failed to save workout log')
     } finally {
       setSubmitting(false)
     }
   }
 
-  if (loading) return <p className="loading-text">Loading workout...</p>
-  if (!split) return (
-    <div className="empty-state">
-      <div className="empty-icon">❌</div>
-      <p>Workout not found.</p>
-    </div>
-  )
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-secondary)' }}>
+        Loading workout session...
+      </div>
+    )
+  }
+
+  if (!split) {
+    return (
+      <div className="empty-state">
+        <div className="empty-icon">❌</div>
+        <div className="empty-title">Workout Session Not Found</div>
+        <button className="btn btn-secondary btn-sm" onClick={() => navigate('/client')} style={{ marginTop: 12 }}>
+          Back to Home
+        </button>
+      </div>
+    )
+  }
 
   const activeExercises = (split.exercises || []).filter(ex => !ex.isArchived)
 
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto', animation: 'fadeSlideUp 0.3s ease' }}>
+    <div style={{ maxWidth: 600, margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-        <button className="btn btn-secondary btn-sm" onClick={() => navigate(-1)}>←</button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <button className="btn btn-secondary btn-sm" onClick={() => navigate(-1)}>
+          ← Back
+        </button>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontWeight: 800, fontSize: '1.3rem', marginBottom: 2 }}>
-            {split.name || split.day + ' Workout'}
+          <h1 className="page-title" style={{ fontSize: '1.3rem', marginBottom: 2 }}>
+            {split.name || `${split.day} Session`}
           </h1>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            {split.muscleGroups}
-          </div>
+          {split.muscleGroups && (
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              🎯 {split.muscleGroups}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Progress</span>
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent)' }}>
-            {doneSets}/{totalSets} sets
+      {/* Progress Bar */}
+      <div className="card" style={{ padding: 16, marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Workout Progress</span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--accent)' }}>
+            {doneSets} / {totalSets} sets completed <span className="tick-mark">✓</span>
           </span>
         </div>
-        <div className="progress-bar-wrap">
-          <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
+
+        <div style={{ width: '100%', height: 8, background: 'var(--bg)', borderRadius: 4, overflow: 'hidden' }}>
+          <div style={{
+            height: '100%',
+            width: `${progressPercent}%`,
+            background: 'var(--accent)',
+            borderRadius: 4,
+            transition: 'width var(--transition-fast)'
+          }} />
         </div>
       </div>
 
-      {/* Exercises */}
+      {/* Exercises & Sets */}
       {activeExercises.map(ex => {
         const sets = logState[ex.id] || []
+        const completedSetsCount = sets.filter(s => s.done).length
+
         return (
           <div key={ex.id} className="card" style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>{ex.name}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ex.muscleGroup}</div>
+                <h3 style={{ fontSize: '1.05rem', marginBottom: 2 }}>{ex.name}</h3>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{ex.muscleGroup}</span>
               </div>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '4px 10px' }}>
-                {sets.filter(s => s.done).length}/{sets.length} done
+              <span className={`status-badge ${completedSetsCount > 0 ? 'status-active' : 'status-inactive'}`}>
+                {completedSetsCount > 0 && <span className="tick-mark">✓</span>} {completedSetsCount}/{sets.length}
               </span>
             </div>
 
-            {/* Sets header */}
-            <div className="log-sets-header">
-              <span style={{ textAlign: 'center' }}>SET</span>
-              <span style={{ textAlign: 'center' }}>KG</span>
-              <span style={{ textAlign: 'center' }}>REPS</span>
-              <span />
+            {/* Sets Header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr 48px', gap: 8, marginBottom: 8, padding: '0 8px' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700, textAlign: 'center' }}>SET</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700, textAlign: 'center' }}>KG</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700, textAlign: 'center' }}>REPS</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700, textAlign: 'center' }}>DONE</span>
             </div>
 
-            {/* Set rows */}
+            {/* Set Rows */}
             {(ex.exerciseSets || []).map((s, si) => (
               <SetRow
                 key={s.id}
-                exercise={ex}
                 setIdx={si}
                 set={s}
                 loggedSet={sets[si]}
@@ -222,41 +251,33 @@ export default function ClientWorkoutLog() {
                 onCheck={(idx) => checkSet(ex.id, idx)}
               />
             ))}
-
-            {ex.notes && (
-              <p style={{ marginTop: 10, color: 'var(--text-muted)', fontSize: '0.78rem', fontStyle: 'italic' }}>
-                💡 {ex.notes}
-              </p>
-            )}
           </div>
         )
       })}
 
-      {/* Note */}
+      {/* Session Note Card */}
       <div className="card" style={{ marginBottom: 24 }}>
-        <label className="form-label" style={{ marginBottom: 8, display: 'block' }}>Session Note (optional)</label>
-        <textarea
-          className="form-textarea"
-          placeholder="How did this session feel? Any PRs? Notes for your trainer…"
-          value={note}
-          onChange={e => setNote(e.target.value)}
-          rows={2}
-        />
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">Session Notes (Optional)</label>
+          <textarea
+            className="form-textarea"
+            rows={2}
+            placeholder="How did this workout feel? Any personal records or notes..."
+            value={note}
+            onChange={e => setNote(e.target.value)}
+          />
+        </div>
       </div>
 
-      {/* Submit */}
+      {/* Submit Button */}
       <button
-        className="btn btn-primary btn-full btn-lg"
+        className="btn btn-primary btn-full"
         onClick={handleSubmit}
         disabled={submitting || doneSets === 0}
         style={{ marginBottom: 32 }}
       >
-        {submitting ? 'Saving…' : `Finish Workout${doneSets > 0 ? ` (${doneSets} sets)` : ''} 💪`}
+        {submitting ? 'Saving Session...' : `Finish Workout (${doneSets} sets completed) ✓`}
       </button>
-
-      {doneSets === 0 && (
-        <p className="log-progress-note">Check off at least one set to finish.</p>
-      )}
     </div>
   )
 }
