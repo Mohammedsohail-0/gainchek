@@ -8,7 +8,7 @@ import "./GymDashboard.css";
 import Table from '../../components/Table'
 import Profile from '../../components/Profile'
 import ClientCard from '../../components/ClientCard'
-import { useIsMobile } from '../../components/useIsMobile'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 
 const MEMBERSHIP_TYPES = [
@@ -41,8 +41,6 @@ export default function GymDashboard() {
   const [memberships, setMemberships] = useState([])
   const [announcements, setAnnouncements] = useState([])
   const [loading, setLoading] = useState(true)
-  const unAssignedClients = []
-
 
   // Invite trainer modal
   const [showTrainerInvite, setShowTrainerInvite] = useState(false)
@@ -53,7 +51,21 @@ export default function GymDashboard() {
   const [showCreateMembership, setShowCreateMembership] = useState(false)
   const [selectedClientId, setSelectedClientId] = useState('')
   const [membershipType, setMembershipType] = useState('GENERAL')
+  const [membershipStartDate, setMembershipStartDate] = useState(new Date().toISOString().split('T')[0])
+  const [membershipEndDate, setMembershipEndDate] = useState('')
   const [creatingMembership, setCreatingMembership] = useState(false)
+
+  // Assign Coach modal
+  const [showAssignCoach, setShowAssignCoach] = useState(false)
+  const [assignClientId, setAssignClientId] = useState('')
+  const [assignCoachId, setAssignCoachId] = useState('')
+  const [assigningCoach, setAssigningCoach] = useState(false)
+
+  // Remove Trainer modal
+  const [showRemoveTrainer, setShowRemoveTrainer] = useState(false)
+  const [trainerToRemove, setTrainerToRemove] = useState(null)
+  const [keepTrainerClients, setKeepTrainerClients] = useState(true)
+  const [removingTrainer, setRemovingTrainer] = useState(false)
 
   // Announcement compose
   const [newMsg, setNewMsg] = useState('')
@@ -110,7 +122,7 @@ export default function GymDashboard() {
   const handleCreateMembership = async (e) => {
     e.preventDefault()
     if (!selectedClientId) {
-      toast.error('Please select or enter a client ID')
+      toast.error('Please select or enter a client')
       return
     }
     setCreatingMembership(true)
@@ -119,11 +131,19 @@ export default function GymDashboard() {
         clientId: selectedClientId,
         type: membershipType,
         isActive: true,
+        startDate: membershipStartDate || null,
+        endDate: membershipEndDate || null,
       })
-      setMemberships(prev => [res.data, ...prev])
+      
+      // Refresh memberships list to get full populated object
+      const memberRes = await api.get('/gym/memberships')
+      setMemberships(memberRes.data)
+      
       toast.success('Membership created successfully')
       setShowCreateMembership(false)
       setSelectedClientId('')
+      setMembershipStartDate(new Date().toISOString().split('T')[0])
+      setMembershipEndDate('')
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to create membership')
     } finally {
@@ -138,6 +158,73 @@ export default function GymDashboard() {
       toast.success(res.data.isActive ? 'Membership activated ✓' : 'Membership deactivated')
     } catch {
       toast.error('Failed to update membership')
+    }
+  }
+
+  const handleAssignCoach = (clientId) => {
+    setAssignClientId(clientId)
+    setAssignCoachId('')
+    setShowAssignCoach(true)
+  }
+
+  const handleSaveCoachAssignment = async (e) => {
+    e.preventDefault()
+    if (!assignClientId || !assignCoachId) {
+      toast.error('Please select a trainer')
+      return
+    }
+    setAssigningCoach(true)
+    try {
+      await api.post('/gym/trainers/reassign', {
+        clientId: assignClientId,
+        toCoachId: assignCoachId,
+      })
+      toast.success('Coach assigned successfully ✓')
+      setShowAssignCoach(false)
+      setAssignClientId('')
+      setAssignCoachId('')
+      
+      const [clientRes, trainerRes] = await Promise.all([
+        api.get('/gym/clients'),
+        api.get('/gym/trainers'),
+      ])
+      setClients(clientRes.data)
+      setTrainers(trainerRes.data)
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to assign coach')
+    } finally {
+      setAssigningCoach(false)
+    }
+  }
+
+  const handleOpenRemoveTrainer = (trainer) => {
+    setTrainerToRemove(trainer)
+    setKeepTrainerClients(true)
+    setShowRemoveTrainer(true)
+  }
+
+  const handleConfirmRemoveTrainer = async (e) => {
+    e.preventDefault()
+    if (!trainerToRemove) return
+    setRemovingTrainer(true)
+    try {
+      const res = await api.delete(`/gym/trainers/${trainerToRemove.id}`, {
+        data: { keepClients: keepTrainerClients }
+      })
+      toast.success(res.data?.message || 'Trainer removed successfully')
+      setShowRemoveTrainer(false)
+      setTrainerToRemove(null)
+      
+      const [trainerRes, clientRes] = await Promise.all([
+        api.get('/gym/trainers'),
+        api.get('/gym/clients'),
+      ])
+      setTrainers(trainerRes.data)
+      setClients(clientRes.data)
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to remove trainer')
+    } finally {
+      setRemovingTrainer(false)
     }
   }
 
@@ -168,6 +255,27 @@ export default function GymDashboard() {
     }
   }
 
+  const isMembershipExpired = (membership) => {
+    if (!membership) return false
+    if (!membership.isActive) return true
+    if (membership.endDate) {
+      const end = new Date(membership.endDate)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      return end < today
+    }
+    return false
+  }
+
+  const handleRemoveClient = async (membershipId) => {
+    try {
+      await api.patch(`/gym/memberships/${membershipId}`, { isActive: false })
+      setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, isActive: false } : m))
+      toast.success('Membership deactivated')
+    } catch {
+      toast.error('Failed to update membership')
+    }
+  }
 
   if (loading) {
     return (
@@ -182,47 +290,37 @@ export default function GymDashboard() {
     )
   }
 
-  const isCurrentMonthPaid = (membership) => {
-    const now = new Date();
-    const start = new Date(membership.startDate);
-    const end = new Date(membership.endDate);
+  const expiredMemberships = memberships.filter(m => isMembershipExpired(m))
+  const expiredMembersCount = expiredMemberships.length
 
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0); // last day of this month
-
-    // paid if the membership period overlaps this month at all
-    return start <= monthEnd && end >= monthStart;
-  };
-
-  const hasCoach = (client) => {
-    if (client.coachId) {
-      return true
-    }
-    unAssignedClients.push(client);
-    return false
-  }
-
-  const ExpiredMembersCount = memberships.filter(m => isCurrentMonthPaid(m)).length;
   const ExpiredClientsColumns = [
     {
       key: 'profile',
       label: 'Client',
-      render: (client) => <Profile name={client.name} size={"lg"} />,
+      render: (row) => <Profile name={row.name} size={"lg"} />,
     },
-    { key: 'expiredDate', label: 'expiredDate' },
+    { key: 'expiredDate', label: 'Expiration Date' },
+    { key: 'status', label: 'Status' },
     {
       key: 'action',
       label: '',
-      render: (client) => (
+      render: (row) => (
         <Button
           variant="danger"
-          text="Remove"
-          onClick={() => handleRemoveclient(client.id)}
+          text="Deactivate"
+          onClick={() => handleRemoveClient(row.membershipId)}
         />
       ),
     },
-  ];
-  const ExpiredMClientsData = clients.filter((c) => isCurrentMonthPaid(c))
+  ]
+
+  const ExpiredMClientsData = expiredMemberships.map((m) => ({
+    id: m.client?.id ?? m.clientId,
+    membershipId: m.id,
+    name: m.client?.name || m.client?.user?.email || 'Client',
+    expiredDate: m.endDate ? new Date(m.endDate).toLocaleDateString() : '—',
+    status: !m.isActive ? 'Deactivated' : 'Expired',
+  }))
 
   const unassignedClientsColumns = [
     {
@@ -242,9 +340,9 @@ export default function GymDashboard() {
         />
       ),
     },
-  ];
+  ]
 
-  const unassignedClientsData = clients.filter((c) => !c.coachId);
+  const unassignedClientsData = clients.filter((c) => !c.coachId)
 
   return (
     <div className="sidebar-layout">
@@ -264,7 +362,7 @@ export default function GymDashboard() {
           <div className='quick-stats-container'>
             <InfoDiv info={trainers.length} infoLabel={"Total Trainers"}></InfoDiv>
             <InfoDiv info={clients.length} infoLabel={"Total Clients"}></InfoDiv>
-            <InfoDiv info={ExpiredMembersCount} infoLabel={"Expired Membership Clients"}></InfoDiv>
+            <InfoDiv info={expiredMembersCount} infoLabel={"Expired Membership Clients"}></InfoDiv>
           </div>
           {/* ─── Tab 1: Overview ───────────────────────────────────────────── */}
           {tab === 'Overview' && (
@@ -275,54 +373,62 @@ export default function GymDashboard() {
               </div>
               <div className='quick-action card'>
                 <Button variant={"secondary"} text={"Invite Trainer"} onClick={handleInviteTrainer}></Button>
-
-                <Button variant={"secondary"} text={"Invite Client"}></Button>
-                <Button variant={"primary"} text={"Post Announcement"} onClick={() => { setTab('Announcements') }}></Button>
+                <Button variant={"secondary"} text={"Add / Manage Membership"} onClick={() => setShowCreateMembership(true)}></Button>
+                <Button variant={"primary"} text={"Post Announcement"} onClick={() => setTab('Announcements')}></Button>
               </div>
 
               {/*Un-assigned clients list*/}
               <div className='un-assigned-clients-container'>
-              <div>
-                <h3>Un-assigned clients</h3>
-              </div>
-              {isMobile ? (
-                <div className="card-list">
-                  {unassignedClientsData.map((client) => (
-                    <ClientCard
-                    key={client.id}
-                    data={[client.name, `Goal: ${client.goal}`]}
-                    others={
-                      <Button variant="secondary" text="Assign Coach" onClick={() => handleAssignCoach(client.id)} />
-                    }
-                    />
-                  ))}
+                <div>
+                  <h3>Un-assigned clients</h3>
                 </div>
-              ) : (
-                <Table columns={unassignedClientsColumns} data={unassignedClientsData} />
-              )}
+                {unassignedClientsData.length === 0 ? (
+                  <div className="card" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    All clients have an assigned trainer.
+                  </div>
+                ) : isMobile ? (
+                  <div className="card-list">
+                    {unassignedClientsData.map((client) => (
+                      <ClientCard
+                        key={client.id}
+                        data={[client.name, `Goal: ${client.goal || 'General'}`]}
+                        others={
+                          <Button variant="secondary" text="Assign Coach" onClick={() => handleAssignCoach(client.id)} />
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Table columns={unassignedClientsColumns} data={unassignedClientsData} />
+                )}
               </div>
 
               {/*Expired clients list*/}
               <div className='expired-clients-container'>
-              <div>
-                <h3>Expired clients</h3>
-              </div>
-              {isMobile ? (
-                <div className="card-list">
-                  {unassignedClientsData.map((client) => (
-                    <ClientCard
-                    key={client.id}
-                    data={[client.name, client.endDate]}
-                    others={
-                      <Button variant="secondary" text="Remove" onClick={() => handleRemoveClient(client.id)} />
-                    }
-                    />
-                  ))}
+                <div>
+                  <h3>Expired clients</h3>
                 </div>
-              ) : (
-                <Table columns={ExpiredClientsColumns} data={ExpiredMClientsData} />
-              )}
+                {ExpiredMClientsData.length === 0 ? (
+                  <div className="card" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    No expired or inactive membership clients.
+                  </div>
+                ) : isMobile ? (
+                  <div className="card-list">
+                    {ExpiredMClientsData.map((row) => (
+                      <ClientCard
+                        key={row.membershipId}
+                        data={[row.name, `Expired: ${row.expiredDate}`]}
+                        others={
+                          <Button variant="secondary" text="Deactivate" onClick={() => handleRemoveClient(row.membershipId)} />
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Table columns={ExpiredClientsColumns} data={ExpiredMClientsData} />
+                )}
               </div>
+              
               <div className="card">
                 <h3 style={{ marginBottom: 16 }}>Latest Announcement</h3>
                 {announcements.length === 0 ? (
@@ -369,6 +475,7 @@ export default function GymDashboard() {
                         <th>EMAIL</th>
                         <th>ACTIVE CLIENTS</th>
                         <th>JOINED</th>
+                        <th>ACTION</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -383,6 +490,14 @@ export default function GymDashboard() {
                           </td>
                           <td style={{ color: 'var(--text-muted)' }}>
                             {new Date(t.createdAt).toLocaleDateString()}
+                          </td>
+                          <td>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleOpenRemoveTrainer(t)}
+                            >
+                              Remove
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -412,6 +527,7 @@ export default function GymDashboard() {
                         <th>PRIMARY GOAL</th>
                         <th>TRAINER</th>
                         <th>STATUS</th>
+                        <th>ACTION</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -434,6 +550,14 @@ export default function GymDashboard() {
                               <span className="status-badge status-inactive">Inactive</span>
                             )}
                           </td>
+                          <td>
+                            <button
+                              className="btn btn-sm btn-secondary"
+                              onClick={() => handleAssignCoach(c.id)}
+                            >
+                              {c.coachId ? 'Reassign Coach' : 'Assign Coach'}
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -446,6 +570,11 @@ export default function GymDashboard() {
           {/* ─── Tab 4: Memberships ────────────────────────────────────────── */}
           {tab === 'Memberships' && (
             <div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                <button className="btn btn-primary" onClick={() => setShowCreateMembership(true)}>
+                  + Create Membership
+                </button>
+              </div>
               {memberships.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-icon">💳</div>
@@ -461,42 +590,57 @@ export default function GymDashboard() {
                     <thead>
                       <tr>
                         <th>CLIENT</th>
-                        <th>MEMBERSHIP TYPE</th>
+                        <th>TYPE</th>
+                        <th>START DATE</th>
+                        <th>END DATE</th>
                         <th>STATUS</th>
                         <th>ACTION</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {memberships.map(m => (
-                        <tr key={m.id}>
-                          <td style={{ fontWeight: 600 }}>
-                            {m.client?.name || 'Client ID: ' + m.clientId.slice(0, 8)}
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                              {m.client?.user?.email}
-                            </div>
-                          </td>
-                          <td>
-                            <MembershipTypeBadge type={m.type} />
-                          </td>
-                          <td>
-                            {m.isActive ? (
-                              <span className="status-badge status-active">
-                                <span className="tick-mark">✓</span> Active
-                              </span>
-                            ) : (
-                              <span className="status-badge status-inactive">Inactive</span>
-                            )}
-                          </td>
-                          <td>
-                            <button
-                              className={`btn btn-sm ${m.isActive ? 'btn-secondary' : 'btn-primary'}`}
-                              onClick={() => handleToggleMembership(m.id, m.isActive)}
-                            >
-                              {m.isActive ? 'Deactivate' : 'Activate ✓'}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {memberships.map(m => {
+                        const expired = isMembershipExpired(m)
+                        return (
+                          <tr key={m.id}>
+                            <td style={{ fontWeight: 600 }}>
+                              {m.client?.name || 'Client ID: ' + m.clientId.slice(0, 8)}
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                {m.client?.user?.email}
+                              </div>
+                            </td>
+                            <td>
+                              <MembershipTypeBadge type={m.type} />
+                            </td>
+                            <td style={{ color: 'var(--text-secondary)' }}>
+                              {m.startDate ? new Date(m.startDate).toLocaleDateString() : '—'}
+                            </td>
+                            <td style={{ color: 'var(--text-secondary)' }}>
+                              {m.endDate ? new Date(m.endDate).toLocaleDateString() : '—'}
+                            </td>
+                            <td>
+                              {!m.isActive ? (
+                                <span className="status-badge status-inactive">Inactive</span>
+                              ) : expired ? (
+                                <span className="status-badge" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                                  Expired
+                                </span>
+                              ) : (
+                                <span className="status-badge status-active">
+                                  <span className="tick-mark">✓</span> Active
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              <button
+                                className={`btn btn-sm ${m.isActive ? 'btn-secondary' : 'btn-primary'}`}
+                                onClick={() => handleToggleMembership(m.id, m.isActive)}
+                              >
+                                {m.isActive ? 'Deactivate' : 'Activate ✓'}
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -672,6 +816,27 @@ export default function GymDashboard() {
                 </select>
               </div>
 
+              <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label className="form-label">Start Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={membershipStartDate}
+                    onChange={e => setMembershipStartDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">End Date (Optional)</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={membershipEndDate}
+                    onChange={e => setMembershipEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
                 <button
                   type="button"
@@ -686,6 +851,146 @@ export default function GymDashboard() {
                   disabled={creatingMembership}
                 >
                   {creatingMembership ? 'Creating...' : 'Create Membership ✓'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Assign Coach Modal ───────────────────────────────────────────── */}
+      {showAssignCoach && (
+        <div className="sidebar-overlay mobile-open" onClick={() => setShowAssignCoach(false)}>
+          <div
+            className="card"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '90%',
+              maxWidth: 480,
+              zIndex: 210,
+              margin: 0
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: 12 }}>Assign Trainer to Client</h3>
+            <form onSubmit={handleSaveCoachAssignment}>
+              <div className="form-group">
+                <label className="form-label">Client</label>
+                <select
+                  className="form-select"
+                  value={assignClientId}
+                  onChange={e => setAssignClientId(e.target.value)}
+                >
+                  <option value="">Select client...</option>
+                  {clients.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.coachId ? '(Currently assigned)' : '(Unassigned)'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Select Trainer</label>
+                <select
+                  className="form-select"
+                  value={assignCoachId}
+                  onChange={e => setAssignCoachId(e.target.value)}
+                  required
+                >
+                  <option value="">Select trainer...</option>
+                  {trainers.map(t => (
+                    <option key={t.id} value={t.id}>
+                      🏋️ {t.name} ({t.activeClientCount || 0} active clients)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowAssignCoach(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={assigningCoach || !assignCoachId}
+                >
+                  {assigningCoach ? 'Assigning...' : 'Assign Coach ✓'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Remove Trainer Modal ─────────────────────────────────────────── */}
+      {showRemoveTrainer && trainerToRemove && (
+        <div className="sidebar-overlay mobile-open" onClick={() => setShowRemoveTrainer(false)}>
+          <div
+            className="card"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '90%',
+              maxWidth: 480,
+              zIndex: 210,
+              margin: 0
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: 12 }}>Remove Trainer</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
+              Are you sure you want to remove <strong>{trainerToRemove.name}</strong> from this gym facility?
+            </p>
+            <form onSubmit={handleConfirmRemoveTrainer}>
+              <div className="form-group">
+                <label className="form-label">What should happen to their clients?</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="keepClients"
+                      checked={keepTrainerClients === true}
+                      onChange={() => setKeepTrainerClients(true)}
+                    />
+                    <span>Trainer keeps their clients as an independent coach</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="keepClients"
+                      checked={keepTrainerClients === false}
+                      onChange={() => setKeepTrainerClients(false)}
+                    />
+                    <span>Deactivate clients so gym owner can reassign them</span>
+                  </label>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowRemoveTrainer(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-danger"
+                  disabled={removingTrainer}
+                >
+                  {removingTrainer ? 'Removing...' : 'Confirm Remove'}
                 </button>
               </div>
             </form>
