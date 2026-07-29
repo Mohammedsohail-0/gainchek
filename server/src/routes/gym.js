@@ -165,7 +165,10 @@ router.get('/clients', async (req, res, next) => {
   try {
     const clients = await prisma.clientProfile.findMany({
       where: {
-        coach: { gymId: req.gym.id }
+        OR: [
+          { coach: { gymId: req.gym.id } },
+          { memberships: { some: { gymId: req.gym.id } } }
+        ]
       },
       include: {
         user: { select: { email: true } },
