@@ -260,9 +260,8 @@ export default function GymDashboard() {
     if (!membership.isActive) return true
     if (membership.endDate) {
       const end = new Date(membership.endDate)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      return end < today
+      const now = new Date()
+      return end <= now
     }
     return false
   }
@@ -406,7 +405,7 @@ export default function GymDashboard() {
               {/*Expired clients list*/}
               <div className='expired-clients-container'>
                 <div>
-                  <h3>Expired clients</h3>
+                  <h3>Membership expired</h3>
                 </div>
                 {ExpiredMClientsData.length === 0 ? (
                   <div className="card" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
