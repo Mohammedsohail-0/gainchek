@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import Logo from './Logo'
 
 const NAV_ITEMS = [
   { id: 'Overview', label: 'Home', icon: '' },
@@ -31,19 +32,18 @@ export default function Sidebar({ activeTab, onTabChange, gymName }) {
     <>
       {/* Mobile Top Header */}
       <div className="mobile-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button
-            className="hamburger-btn"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Toggle Navigation Menu"
-          >
-            ☰
-          </button>
-          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.2rem' }}>
-            GainChek <span className="brand-tick"></span>
-          </span>
-        </div>
-        <span className="role-badge role-gym_owner">Gym Owner</span>
+        <Logo height={24} textSize="1.15rem" />
+        <button
+          className="hamburger-btn"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle Navigation Menu"
+        >
+          <svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="24" height="3" rx="1.5" fill="var(--accent, #4CAF50)" />
+            <rect y="7.5" width="24" height="3" rx="1.5" fill="var(--accent, #4CAF50)" />
+            <rect y="15" width="24" height="3" rx="1.5" fill="var(--accent, #4CAF50)" />
+          </svg>
+        </button>
       </div>
 
       {/* Backdrop overlay for mobile drawer */}
@@ -56,7 +56,7 @@ export default function Sidebar({ activeTab, onTabChange, gymName }) {
       <aside className={`sidebar${mobileOpen ? ' mobile-open' : ''}`}>
         <div className="sidebar-content">
           <div className="sidebar-brand">
-            GainChek <span className="brand-tick"></span>
+            <Logo height={28} textSize="1.25rem" />
           </div>
 
           {gymName && (

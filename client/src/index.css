@@ -252,9 +252,9 @@ ol {
 .mobile-header {
   display: none;
   height: 60px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border-secondary);
-  padding: 0 var(--space-4);
+  background: var(--surface, #18181b);
+  border-bottom: 1px solid var(--border-secondary, #27272a);
+  padding: 0 16px;
   align-items: center;
   justify-content: space-between;
   position: sticky;
@@ -266,12 +266,16 @@ ol {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  padding: 6px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-secondary);
-  color: var(--text-primary);
-  font-size: 1.25rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.hamburger-btn:hover {
+  opacity: 0.85;
 }
 
 .sidebar-overlay {

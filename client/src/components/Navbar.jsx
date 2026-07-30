@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import Logo from './Logo'
 
 const ROLE_LABEL = {
   gym_owner: 'Gym Owner',
@@ -45,7 +46,7 @@ export default function Navbar() {
           className="navbar-brand"
           style={{ textDecoration: 'none' }}
         >
-          GainChek <span className="tick-mark">✓</span>
+          <Logo height={26} textSize="1.2rem" />
         </Link>
 
         {links.length > 0 && (

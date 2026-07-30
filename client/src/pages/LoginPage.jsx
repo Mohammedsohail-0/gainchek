@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
+import Logo from '../components/Logo'
 
 const ROLES = [
   { value: 'COACH', label: 'Trainer', icon: '🏋️' },
@@ -65,8 +66,8 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">
-          GainChek <span className="tick-mark">✓</span>
+        <div className="auth-logo" style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          <Logo height={34} textSize="1.5rem" />
         </div>
         <h2 style={{ textAlign: 'center', marginBottom: 8 }}>Welcome back</h2>
         <p className="auth-subtitle">

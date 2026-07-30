@@ -38,8 +38,13 @@ export default function GymDashboard() {
   const [tab, setTab] = useState('Overview')
   const [gym, setGym] = useState(null)
   const [trainers, setTrainers] = useState([])
+  const [trainerSearch, setTrainerSearch] = useState('')
   const [clients, setClients] = useState([])
+  const [clientSearch, setClientSearch] = useState('')
   const [memberships, setMemberships] = useState([])
+  const [membershipSearch, setMembershipSearch] = useState('')
+  const [membershipFilter, setMembershipFilter] = useState('ALL')
+  const [showMembershipFilterMenu, setShowMembershipFilterMenu] = useState(false)
   const [announcements, setAnnouncements] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -261,6 +266,12 @@ export default function GymDashboard() {
     setShowAssignCoach(true)
   }
 
+  const handleOpenAssignModalForTrainer = (trainerId) => {
+    setAssignCoachId(trainerId || '')
+    setAssignClientId('')
+    setShowAssignCoach(true)
+  }
+
   const handleSaveCoachAssignment = async (e) => {
     e.preventDefault()
     if (!assignClientId || !assignCoachId) {
@@ -436,53 +447,192 @@ export default function GymDashboard() {
 
   const unassignedClientsColumns = [
     {
-      key: 'profile',
-      label: 'Client',
-      render: (client) => <Profile name={client.name} size={"lg"} />,
+      key: 'client',
+      label: 'CLIENT',
+      render: (client) => (
+        <div className="client-profile-cell">
+          <Profile name={client.name} size={"lg"} />
+
+        </div>
+      ),
     },
-    { key: 'goal', label: 'Goal' },
+    {
+      key: 'goal',
+      label: 'PROGRAM',
+      render: (client) => (
+        <span className="client-program-text">
+          {client.goal ? client.goal.replace('_', ' ') : 'Weight loss'}
+        </span>
+      ),
+    },
     {
       key: 'action',
       label: '',
       render: (client) => (
-        <Button
-          variant="secondary"
-          text="Assign Coach"
-          onClick={() => handleAssignCoach(client.id)}
-        />
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn-assign-clients"
+            onClick={() => handleAssignCoach(client.id)}
+          >
+            {client.coachId ? 'Re-assign trainer' : 'Assign trainer'}
+          </button>
+          <button
+            type="button"
+            className="btn-remove-trainer"
+            onClick={() => handleOpenRemoveWarning(client)}
+          >
+            Remove
+          </button>
+        </div>
       ),
     },
   ]
 
   const unassignedClientsData = clients.filter((c) => !c.coachId)
-  const trainersColumns = [
-    { key: 'name', label: 'TRAINERS' },
-    { key: 'count', lable: 'CLIENTS' },
-    {
-      key: 'action', label: '',
-      render: (row) => (
-        <div>
+  const filteredClients = clients.filter(c =>
+    (c.name || '').toLowerCase().includes(clientSearch.toLowerCase()) ||
+    (c.goal || '').toLowerCase().includes(clientSearch.toLowerCase())
+  )
+  const filteredTrainers = trainers.filter(t =>
+    (t.name || '').toLowerCase().includes(trainerSearch.toLowerCase()) ||
+    (t.email || '').toLowerCase().includes(trainerSearch.toLowerCase())
+  )
+  const getDaysLeft = (membership) => {
+    if (!membership || !membership.isActive || !membership.endDate) return null
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    const end = new Date(membership.endDate)
+    end.setHours(0, 0, 0, 0)
+    const diffTime = end.getTime() - now.getTime()
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  }
 
+  const filteredMemberships = memberships.filter(m => {
+    const clientName = m.client?.name || m.client?.user?.email || ''
+    const matchesSearch = clientName.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+      (m.type || '').toLowerCase().includes(membershipSearch.toLowerCase())
+
+    if (!matchesSearch) return false
+
+    const expired = isMembershipExpired(m)
+    const isPaidThisMonth = m.isActive && !expired
+
+    if (membershipFilter === 'PAID_THIS_MONTH') {
+      return isPaidThisMonth
+    }
+    if (membershipFilter === 'UNPAID_THIS_MONTH') {
+      return !isPaidThisMonth
+    }
+    if (membershipFilter === 'FOR_3_MONTHS') {
+      if (!m.startDate || !m.endDate) return false
+      const start = new Date(m.startDate)
+      const end = new Date(m.endDate)
+      const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+      return diffDays >= 75 && diffDays <= 105
+    }
+
+    return true
+  })
+
+  const membershipsColumns = [
+    {
+      key: 'name',
+      label: 'NAME',
+      render: (m) => (
+        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+          {m.client?.name || m.client?.user?.email || 'Client'}
+        </div>
+      ),
+    },
+    {
+      key: 'endDate',
+      label: 'END DATE',
+      render: (m) => (
+        <span style={{ color: 'var(--text-secondary)' }}>
+          {m.endDate ? new Date(m.endDate).toLocaleDateString() : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'daysLeft',
+      label: 'DAYS LEFT',
+      render: (m) => {
+        const days = getDaysLeft(m)
+        if (days === null) {
+          return <span style={{ color: 'var(--text-muted)' }}>Inactive</span>
+        }
+        if (days < 0) {
+          return <span style={{ color: '#ef4444', fontWeight: 600 }}>Expired</span>
+        }
+        if (days === 0) {
+          return <span style={{ color: '#eab308', fontWeight: 600 }}>Expires Today</span>
+        }
+        return (
+          <span style={{ color: days <= 7 ? '#eab308' : '#4CAF50', fontWeight: 600 }}>
+            {days} {days === 1 ? 'day' : 'days'} left
+          </span>
+        )
+      },
+    },
+    {
+      key: 'action',
+      label: '',
+      render: (m) => (
+        <button
+          type="button"
+          className="btn-remove-trainer"
+          onClick={() => handleOpenRemoveWarning(m)}
+        >
+          Remove client
+        </button>
+      ),
+    },
+  ]
+
+  const trainersColumns = [
+    {
+      key: 'name',
+      label: 'TRAINER NAME',
+      render: (row) => (
+        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{row.name}</div>
+      ),
+    },
+    {
+      key: 'count',
+      label: 'NUMBER OF CLIENTS',
+      render: (row) => (
+        <span className="active-clients">
+          {row.count} {row.count === 1 ? 'Client' : 'Clients'}
+        </span>
+      ),
+    },
+    {
+      key: 'action',
+      label: 'ACTION',
+      render: (row) => (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <Button
-            variant={"secondary"}
-            text={"assign clients"}
-            onClick={() => handleAssignClients(row.id)}
-            style={{ fontSize: '0.3rem', padding: 3 }}
+            variant="secondary"
+            text="Assign Client"
+            onClick={() => handleOpenAssignModalForTrainer(row.id)}
           />
           <Button
-            variant={"danger"}
-            text={'remove trainer'}
-            onClick={() => handleOpenRemoveTrainer(row.id)}
-            style={{ fontSize: '0.3rem', padding: 3 }}
+            variant="danger"
+            text="Remove Trainer"
+            onClick={() => handleOpenRemoveTrainer(row.rawTrainer)}
           />
         </div>
-      )
-    }
+      ),
+    },
   ]
-  const trainersData = trainers.map((t) => ({
+
+  const trainersData = filteredTrainers.map((t) => ({
     id: t.id,
     name: t.name,
+    email: t.email,
     count: t.activeClientCount || 0,
+    rawTrainer: t,
   }))
   return (
     <div className="sidebar-layout">
@@ -531,10 +681,32 @@ export default function GymDashboard() {
                   <div className="card-list">
                     {unassignedClientsData.map((client) => (
                       <ClientCard
+                        className="trainers-card"
                         key={client.id}
-                        data={[client.name, `Goal: ${client.goal || 'General'}`]}
+                        name={client.name}
+                        data={[
+                          <div key="name" className="trainer-name">{client.name}</div>,
+                          <div key="program" style={{ color: 'var(--text-secondary, #a1a1aa)', fontSize: '0.95rem' }}>
+                            {client.goal ? client.goal.replace('_', ' ') : 'Weight loss'}
+                          </div>,
+                        ]}
                         others={
-                          <Button variant="secondary" text="Assign Coach" onClick={() => handleAssignCoach(client.id)} />
+                          <div className="trainer-card-actions">
+                            <button
+                              type="button"
+                              className="btn-assign-clients"
+                              onClick={() => handleAssignCoach(client.id)}
+                            >
+                              Assign trainer
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-remove-trainer"
+                              onClick={() => handleOpenRemoveWarning(client)}
+                            >
+                              Remove
+                            </button>
+                          </div>
                         }
                       />
                     ))}
@@ -573,7 +745,7 @@ export default function GymDashboard() {
                 )}
               </div>
 
-              <div className="card">
+              <div className="card" style={{ display: 'flex' }}>
                 <h3 style={{ marginBottom: 16 }}>Latest Announcement</h3>
                 {announcements.length === 0 ? (
                   <div className="empty-state" style={{ margin: 0 }}>
@@ -614,54 +786,56 @@ export default function GymDashboard() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ display: 'flex', gap: '16px' }}>
-                    <SearchBar></SearchBar>
+                    <SearchBar
+                      value={trainerSearch}
+                      onChange={(e) => setTrainerSearch(e.target.value)}
+                      placeholder="Search trainers..."
+                    />
                     <Button variant={"primary"} text={"+ Invite Trainer"} onClick={handleInviteTrainer}></Button>
                   </div>
-                  {isMobile ?}
-                  <ClientCard>
 
-                  </ClientCard>
-                  columns={trainersColumns}
-                  data={trainersData}
-                  />
-
-                  <div className="table-responsive">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>TRAINER</th>
-                          <th>EMAIL</th>
-                          <th>ACTIVE CLIENTS</th>
-                          <th>JOINED</th>
-                          <th>ACTION</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {trainers.map(t => (
-                          <tr key={t.id}>
-                            <td style={{ fontWeight: 600 }}>{t.name}</td>
-                            <td style={{ color: 'var(--text-secondary)' }}>{t.email}</td>
-                            <td>
-                              <span className="status-badge status-active">
-                                <span className="tick-mark">✓</span> {t.activeClientCount} Active
-                              </span>
-                            </td>
-                            <td style={{ color: 'var(--text-muted)' }}>
-                              {new Date(t.createdAt).toLocaleDateString()}
-                            </td>
-                            <td>
-                              <button
-                                className="btn btn-sm btn-danger"
-                                onClick={() => handleOpenRemoveTrainer(t)}
-                              >
-                                Remove
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  {isMobile ? (
+                    <div className="card-list">
+                      {trainersData.length === 0 ? (
+                        <div className="card" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                          No trainers match your search.
+                        </div>
+                      ) : (
+                        trainersData.map((row) => (
+                          <ClientCard
+                            className="trainers-card"
+                            key={row.id}
+                            data={[
+                              <div key="name" className="trainer-name">{row.name}</div>,
+                              <div key="count" className="active-clients">
+                                {row.count} {row.count === 1 ? 'active client' : 'active clients'}
+                              </div>,
+                            ]}
+                            others={
+                              <div className="trainer-card-actions">
+                                <button
+                                  type="button"
+                                  className="btn-assign-clients"
+                                  onClick={() => handleOpenAssignModalForTrainer(row.id)}
+                                >
+                                  Assign Clients
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-remove-trainer"
+                                  onClick={() => handleOpenRemoveTrainer(row.rawTrainer)}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            }
+                          />
+                        ))
+                      )}
+                    </div>
+                  ) : (
+                    <Table columns={trainersColumns} data={trainersData} />
+                  )}
                 </div>
               )}
             </div>
@@ -675,52 +849,63 @@ export default function GymDashboard() {
                   <div className="empty-icon">👥</div>
                   <div className="empty-title">No clients registered yet</div>
                   <div className="empty-text">Clients are added when your trainers invite them to GainChek.</div>
+                  <button className="btn btn-primary" onClick={handleInviteClient} style={{ marginTop: 8 }}>
+                    + Invite First Client
+                  </button>
                 </div>
               ) : (
-                <div className="table-responsive">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>CLIENT NAME</th>
-                        <th>EMAIL</th>
-                        <th>PRIMARY GOAL</th>
-                        <th>TRAINER</th>
-                        <th>STATUS</th>
-                        <th>ACTION</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {clients.map(c => (
-                        <tr key={c.id}>
-                          <td style={{ fontWeight: 600 }}>{c.name}</td>
-                          <td style={{ color: 'var(--text-secondary)' }}>{c.email || '—'}</td>
-                          <td style={{ color: 'var(--text-secondary)' }}>
-                            {c.goal ? c.goal.replace('_', ' ') : '—'}
-                          </td>
-                          <td style={{ color: 'var(--text-primary)' }}>
-                            {c.trainerName ? `🏋️ ${c.trainerName}` : 'Unassigned'}
-                          </td>
-                          <td>
-                            {c.isActive ? (
-                              <span className="status-badge status-active">
-                                <span className="tick-mark">✓</span> Active Client
-                              </span>
-                            ) : (
-                              <span className="status-badge status-inactive">Inactive</span>
-                            )}
-                          </td>
-                          <td>
-                            <button
-                              className="btn btn-sm btn-secondary"
-                              onClick={() => handleAssignCoach(c.id)}
-                            >
-                              {c.coachId ? 'Reassign Coach' : 'Assign Coach'}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <SearchBar
+                      value={clientSearch}
+                      onChange={(e) => setClientSearch(e.target.value)}
+                      placeholder="Search clients..."
+                    />
+                    <Button variant={"primary"} text={"+ Invite Client"} onClick={handleInviteClient}></Button>
+                  </div>
+
+                  {isMobile ? (
+                    <div className="card-list">
+                      {filteredClients.length === 0 ? (
+                        <div className="card" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                          No clients match your search.
+                        </div>
+                      ) : (
+                        filteredClients.map((client) => (
+                          <ClientCard
+                            className="trainers-card"
+
+                            data={[
+                              <div key="name" className="trainer-name">{client.name}</div>,
+                              <div key="program" style={{ color: 'var(--text-secondary, #a1a1aa)', fontSize: '0.95rem' }}>
+                                {client.goal ? client.goal.replace('_', ' ') : 'Weight loss'}
+                              </div>,
+                            ]}
+                            others={
+                              <div className="trainer-card-actions">
+                                <button
+                                  type="button"
+                                  className="btn-assign-clients"
+                                  onClick={() => handleAssignCoach(client.id)}
+                                >
+                                  {client.coachId ? 'Re-assign trainer' : 'Assign trainer'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-remove-trainer"
+                                  onClick={() => handleOpenRemoveWarning(client)}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            }
+                          />
+                        ))
+                      )}
+                    </div>
+                  ) : (
+                    <Table columns={unassignedClientsColumns} data={filteredClients} />
+                  )}
                 </div>
               )}
             </div>
@@ -729,11 +914,6 @@ export default function GymDashboard() {
           {/* ─── Tab 4: Memberships ────────────────────────────────────────── */}
           {tab === 'Memberships' && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-                <button className="btn btn-primary" onClick={() => setShowCreateMembership(true)}>
-                  + Create Membership
-                </button>
-              </div>
               {memberships.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-icon">💳</div>
@@ -744,64 +924,154 @@ export default function GymDashboard() {
                   </button>
                 </div>
               ) : (
-                <div className="table-responsive">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>CLIENT</th>
-                        <th>TYPE</th>
-                        <th>START DATE</th>
-                        <th>END DATE</th>
-                        <th>STATUS</th>
-                        <th>ACTION</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {memberships.map(m => {
-                        const expired = isMembershipExpired(m)
-                        return (
-                          <tr key={m.id}>
-                            <td style={{ fontWeight: 600 }}>
-                              {m.client?.name || 'Client ID: ' + m.clientId.slice(0, 8)}
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                {m.client?.user?.email}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {isMobile ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                      <button
+                        type="button"
+                        className="btn-create-membership-pill"
+                        onClick={() => setShowCreateMembership(true)}
+                      >
+                        + Create membership
+                      </button>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                        <div style={{ flex: 1 }}>
+                          <SearchBar
+                            value={membershipSearch}
+                            onChange={(e) => setMembershipSearch(e.target.value)}
+                            placeholder="Search.."
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="filter-funnel-btn"
+                          onClick={() => setShowMembershipFilterMenu(prev => !prev)}
+                          title="Filter Memberships"
+                          style={{
+                            background: showMembershipFilterMenu ? 'var(--surface-hover)' : 'transparent',
+                            border: 'none',
+                            padding: '8px',
+                            borderRadius: '50%',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill={showMembershipFilterMenu ? 'var(--accent)' : '#FFFFFF'}>
+                            <path d="M440-160q-17 0-28.5-11.5T400-200v-240L168-736q-15-20-4.5-42t36.5-22h560q26 0 36.5 22t-4.5 42L560-440v240q0 17-11.5 28.5T520-160h-80Zm40-308 198-252H282l198 252Zm0 0Z" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {showMembershipFilterMenu && (
+                        <div style={{ width: '100%', marginTop: '4px' }}>
+                          <select
+                            className="form-select"
+                            value={membershipFilter}
+                            onChange={(e) => setMembershipFilter(e.target.value)}
+                            style={{
+                              width: '100%',
+                              borderRadius: '50px',
+                              backgroundColor: 'var(--surface-hover)',
+                              borderColor: 'var(--border-secondary)',
+                              padding: '10px 16px',
+                              color: 'var(--text-primary)',
+                              fontSize: '0.9rem'
+                            }}
+                          >
+                            <option value="ALL">All Memberships</option>
+                            <option value="PAID_THIS_MONTH">Paid this month</option>
+                            <option value="FOR_3_MONTHS">For 3 months</option>
+                            <option value="UNPAID_THIS_MONTH">Unpaid for this month</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flexDirection: 'row', flex: 1 }}>
+                        <SearchBar
+                          value={membershipSearch}
+                          onChange={(e) => setMembershipSearch(e.target.value)}
+                          placeholder="Search clients..."
+                        />
+                        <select
+                          className="form-select"
+                          value={membershipFilter}
+                          onChange={(e) => setMembershipFilter(e.target.value)}
+                          style={{
+                            maxWidth: '220px',
+                            borderRadius: '50px',
+                            backgroundColor: 'var(--surface-hover)',
+                            borderColor: 'var(--border-secondary)',
+                            padding: '8px 16px',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          <option value="ALL">All Memberships</option>
+                          <option value="PAID_THIS_MONTH">Paid this month</option>
+                          <option value="FOR_3_MONTHS">For 3 months</option>
+                          <option value="UNPAID_THIS_MONTH">Unpaid for this month</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Button variant="primary" text="+ Create Membership" onClick={() => setShowCreateMembership(true)} />
+                      </div>
+                    </div>
+                  )}
+
+                  {isMobile ? (
+                    <div className="card-list">
+                      {filteredMemberships.length === 0 ? (
+                        <div className="card" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                          No memberships match your search or filter.
+                        </div>
+                      ) : (
+                        filteredMemberships.map((m) => (
+                          <ClientCard
+                            className="trainers-card"
+                            key={m.id}
+                            name={m.client?.name || 'Client'}
+                            data={[
+                              <div key="name" className="trainer-name">{m.client?.name || m.client?.user?.email || 'Client'}</div>,
+                              <div key="endDate" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                End Date: {m.endDate ? new Date(m.endDate).toLocaleDateString() : '—'}
+                              </div>,
+                              <div key="daysLeft" style={{ fontSize: '0.9rem', marginTop: '2px' }}>
+                                {(() => {
+                                  const days = getDaysLeft(m)
+                                  if (days === null) return <span style={{ color: 'var(--text-muted)' }}>Inactive</span>
+                                  if (days < 0) return <span style={{ color: '#ef4444', fontWeight: 600 }}>Expired</span>
+                                  if (days === 0) return <span style={{ color: '#eab308', fontWeight: 600 }}>Expires Today</span>
+                                  return (
+                                    <span style={{ color: days <= 7 ? '#eab308' : '#4CAF50', fontWeight: 600 }}>
+                                      {days} {days === 1 ? 'day' : 'days'} left
+                                    </span>
+                                  )
+                                })()}
                               </div>
-                            </td>
-                            <td>
-                              <MembershipTypeBadge type={m.type} />
-                            </td>
-                            <td style={{ color: 'var(--text-secondary)' }}>
-                              {m.startDate ? new Date(m.startDate).toLocaleDateString() : '—'}
-                            </td>
-                            <td style={{ color: 'var(--text-secondary)' }}>
-                              {m.endDate ? new Date(m.endDate).toLocaleDateString() : '—'}
-                            </td>
-                            <td>
-                              {!m.isActive ? (
-                                <span className="status-badge status-inactive">Inactive</span>
-                              ) : expired ? (
-                                <span className="status-badge" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                                  Expired
-                                </span>
-                              ) : (
-                                <span className="status-badge status-active">
-                                  <span className="tick-mark">✓</span> Active
-                                </span>
-                              )}
-                            </td>
-                            <td>
-                              <button
-                                className={`btn btn-sm ${m.isActive ? 'btn-secondary' : 'btn-primary'}`}
-                                onClick={() => handleToggleMembership(m.id, m.isActive)}
-                              >
-                                {m.isActive ? 'Deactivate' : 'Activate ✓'}
-                              </button>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+                            ]}
+                            others={
+                              <div className="trainer-card-actions">
+                                <button
+                                  type="button"
+                                  className="btn-remove-trainer"
+                                  onClick={() => handleOpenRemoveWarning(m)}
+                                >
+                                  Remove client
+                                </button>
+                              </div>
+                            }
+                          />
+                        ))
+                      )}
+                    </div>
+                  ) : (
+                    <Table columns={membershipsColumns} data={filteredMemberships} />
+                  )}
                 </div>
               )}
             </div>

@@ -1,13 +1,23 @@
 .ClientCard {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+    display: flex;
     align-items: center;
     gap: 16px;
-    padding: 16px;
-    border-radius: 12px;
+    padding: 16px 20px;
+    border-radius: 16px;
     background: var(--surface);
-    margin-block: 10px ;
+    margin-block: 10px;
 }
-.data{
-    font-size: 0.6rem;
+
+.ClientCard .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.ClientCard .data {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.9rem;
 }

@@ -2,22 +2,45 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    padding: 0 14px;
     border: 1px solid var(--border-secondary);
     border-radius: 50px;
     background-color: var(--surface-hover);
     color: var(--text-primary);
     width: 100%;
-    max-width: 200px;
+    max-width: 320px;
+    outline: none !important;
 }
 
-.search-container input {
-    background: none;
-    border: none;
-    outline: none;
-    padding: 10px;
+.search-container:focus-within,
+.search-container:focus {
+    border-color: var(--border-secondary) !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
-.search-container input:focus {
-    outline: none;
-    border: none;
+.search-container .search-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    fill: var(--text-secondary);
+}
+
+.search-container input,
+.search-container input:focus,
+.search-container input:focus-visible,
+.search-container input:active {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 10px 0;
+    color: var(--text-primary);
+    width: 100%;
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.search-container input::placeholder {
+    color: var(--text-muted);
 }
