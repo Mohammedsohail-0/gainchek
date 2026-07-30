@@ -77,6 +77,32 @@ router.post('/google', async (req, res, next) => {
         return res.json({ token, role: newUser.role, name: newUser.name });
       }
 
+      // GYM_TO_CLIENT invite
+      if (invitation.type === 'GYM_TO_CLIENT') {
+        const newUser = await prisma.user.create({
+          data: {
+            email, name, googleId,
+            role: 'CLIENT',
+            clientProfile: {
+              create: {
+                name,
+                memberships: {
+                  create: {
+                    gymId: invitation.gymId,
+                    type: 'GENERAL',
+                    isActive: true,
+                    startDate: new Date()
+                  }
+                }
+              }
+            }
+          }
+        });
+        await prisma.invitation.update({ where: { id: invitation.id }, data: { used: true } });
+        const token = issueToken(newUser);
+        return res.json({ token, role: newUser.role, name: newUser.name });
+      }
+
       // COACH_TO_CLIENT invite — check for existing inactive profile first
       if (invitation.type === 'COACH_TO_CLIENT') {
         const existingInactive = await prisma.clientProfile.findFirst({

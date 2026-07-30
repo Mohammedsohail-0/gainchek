@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
+import { useIsMobile } from '../../hooks/useIsMobile'
+import "./GymDashboard.css";
 import api from '../../services/api'
 import Sidebar from '../../components/Sidebar'
 import InfoDiv from '../../components/InfoDiv'
 import Button from '../../components/Button'
-import "./GymDashboard.css";
 import Table from '../../components/Table'
 import Profile from '../../components/Profile'
 import ClientCard from '../../components/ClientCard'
-import { useIsMobile } from '../../hooks/useIsMobile'
+import SearchBar from '../../components/SearchBar'
 
 
 const MEMBERSHIP_TYPES = [
@@ -46,6 +47,25 @@ export default function GymDashboard() {
   const [showTrainerInvite, setShowTrainerInvite] = useState(false)
   const [trainerInviteLink, setTrainerInviteLink] = useState('')
   const [trainerInviteLoading, setTrainerInviteLoading] = useState(false)
+
+  // Invite client modal
+  const [showClientInvite, setShowClientInvite] = useState(false)
+  const [clientInviteLink, setClientInviteLink] = useState('')
+  const [clientInviteLoading, setClientInviteLoading] = useState(false)
+
+  // Activate membership modal
+  const [showActivateModal, setShowActivateModal] = useState(false)
+  const [activatingMembershipId, setActivatingMembershipId] = useState('')
+  const [activatingClientName, setActivatingClientName] = useState('')
+  const [activateStartDate, setActivateStartDate] = useState('')
+  const [activateEndDate, setActivateEndDate] = useState('')
+  const [activatingLoading, setActivatingLoading] = useState(false)
+
+  // Remove membership warning modal
+  const [showRemoveWarningModal, setShowRemoveWarningModal] = useState(false)
+  const [membershipToRemoveId, setMembershipToRemoveId] = useState('')
+  const [clientToRemoveName, setClientToRemoveName] = useState('')
+  const [removingMembershipLoading, setRemovingMembershipLoading] = useState(false)
 
   // Create membership modal
   const [showCreateMembership, setShowCreateMembership] = useState(false)
@@ -113,10 +133,84 @@ export default function GymDashboard() {
     }
   }
 
+  const handleInviteClient = async () => {
+    setShowClientInvite(true)
+    setClientInviteLoading(true)
+    try {
+      const res = await api.post('/gym/clients/invite')
+      setClientInviteLink(res.data.inviteLink)
+    } catch {
+      toast.error('Failed to generate client invite link')
+    } finally {
+      setClientInviteLoading(false)
+    }
+  }
+
   const handleCopyLink = () => {
     if (!trainerInviteLink) return
     navigator.clipboard.writeText(trainerInviteLink)
     toast.success('Invite link copied to clipboard')
+  }
+
+  const handleCopyClientInviteLink = () => {
+    if (!clientInviteLink) return
+    navigator.clipboard.writeText(clientInviteLink)
+    toast.success('Client invite link copied to clipboard')
+  }
+
+  const handleOpenActivateModal = (row) => {
+    const membershipId = row.membershipId || row.id
+    const name = row.name || row.client?.name || 'Client'
+    const today = new Date().toISOString().split('T')[0]
+    const nextMonthDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    setActivatingMembershipId(membershipId)
+    setActivatingClientName(name)
+    setActivateStartDate(today)
+    setActivateEndDate(nextMonthDate)
+    setShowActivateModal(true)
+  }
+
+  const handleConfirmActivateMembership = async (e) => {
+    e.preventDefault()
+    if (!activatingMembershipId) return
+    setActivatingLoading(true)
+    try {
+      const res = await api.patch(`/gym/memberships/${activatingMembershipId}`, {
+        isActive: true,
+        startDate: activateStartDate ? new Date(activateStartDate) : null,
+        endDate: activateEndDate ? new Date(activateEndDate) : null
+      })
+      setMemberships(prev => prev.map(m => m.id === activatingMembershipId ? { ...m, ...res.data } : m))
+      toast.success('Membership activated with updated dates ✓')
+      setShowActivateModal(false)
+    } catch {
+      toast.error('Failed to activate membership')
+    } finally {
+      setActivatingLoading(false)
+    }
+  }
+
+  const handleOpenRemoveWarning = (row) => {
+    const membershipId = row.membershipId || row.id
+    const name = row.name || row.client?.name || 'Client'
+    setMembershipToRemoveId(membershipId)
+    setClientToRemoveName(name)
+    setShowRemoveWarningModal(true)
+  }
+
+  const handleConfirmRemoveMembership = async () => {
+    if (!membershipToRemoveId) return
+    setRemovingMembershipLoading(true)
+    try {
+      await api.delete(`/gym/memberships/${membershipToRemoveId}`)
+      setMemberships(prev => prev.filter(m => m.id !== membershipToRemoveId))
+      toast.success('Membership removed ✓')
+      setShowRemoveWarningModal(false)
+    } catch {
+      toast.error('Failed to remove membership')
+    } finally {
+      setRemovingMembershipLoading(false)
+    }
   }
 
   const handleCreateMembership = async (e) => {
@@ -134,11 +228,11 @@ export default function GymDashboard() {
         startDate: membershipStartDate || null,
         endDate: membershipEndDate || null,
       })
-      
+
       // Refresh memberships list to get full populated object
       const memberRes = await api.get('/gym/memberships')
       setMemberships(memberRes.data)
-      
+
       toast.success('Membership created successfully')
       setShowCreateMembership(false)
       setSelectedClientId('')
@@ -183,7 +277,7 @@ export default function GymDashboard() {
       setShowAssignCoach(false)
       setAssignClientId('')
       setAssignCoachId('')
-      
+
       const [clientRes, trainerRes] = await Promise.all([
         api.get('/gym/clients'),
         api.get('/gym/trainers'),
@@ -214,7 +308,7 @@ export default function GymDashboard() {
       toast.success(res.data?.message || 'Trainer removed successfully')
       setShowRemoveTrainer(false)
       setTrainerToRemove(null)
-      
+
       const [trainerRes, clientRes] = await Promise.all([
         api.get('/gym/trainers'),
         api.get('/gym/clients'),
@@ -257,22 +351,34 @@ export default function GymDashboard() {
 
   const isMembershipExpired = (membership) => {
     if (!membership) return false
+    const now = new Date()
     if (!membership.isActive) return true
     if (membership.endDate) {
       const end = new Date(membership.endDate)
-      const now = new Date()
-      return end <= now
+      if (end <= now) return true
+      const isCurrentMonth = end.getMonth() === now.getMonth() && end.getFullYear() === now.getFullYear()
+      if (isCurrentMonth) return true
     }
     return false
   }
 
+  const handleActivateClient = async (membershipId) => {
+    try {
+      const res = await api.patch(`/gym/memberships/${membershipId}`, { isActive: true })
+      setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, ...res.data } : m))
+      toast.success('Membership activated ✓')
+    } catch {
+      toast.error('Failed to activate membership')
+    }
+  }
+
   const handleRemoveClient = async (membershipId) => {
     try {
-      await api.patch(`/gym/memberships/${membershipId}`, { isActive: false })
-      setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, isActive: false } : m))
-      toast.success('Membership deactivated')
+      await api.delete(`/gym/memberships/${membershipId}`)
+      setMemberships(prev => prev.filter(m => m.id !== membershipId))
+      toast.success('Membership removed ✓')
     } catch {
-      toast.error('Failed to update membership')
+      toast.error('Failed to remove membership')
     }
   }
 
@@ -304,11 +410,18 @@ export default function GymDashboard() {
       key: 'action',
       label: '',
       render: (row) => (
-        <Button
-          variant="danger"
-          text="Deactivate"
-          onClick={() => handleRemoveClient(row.membershipId)}
-        />
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Button
+            variant="primary"
+            text="Activate"
+            onClick={() => handleOpenActivateModal(row)}
+          />
+          <Button
+            variant="danger"
+            text="Remove"
+            onClick={() => handleOpenRemoveWarning(row)}
+          />
+        </div>
       ),
     },
   ]
@@ -342,7 +455,35 @@ export default function GymDashboard() {
   ]
 
   const unassignedClientsData = clients.filter((c) => !c.coachId)
+  const trainersColumns = [
+    { key: 'name', label: 'TRAINERS' },
+    { key: 'count', lable: 'CLIENTS' },
+    {
+      key: 'action', label: '',
+      render: (row) => (
+        <div>
 
+          <Button
+            variant={"secondary"}
+            text={"assign clients"}
+            onClick={() => handleAssignClients(row.id)}
+            style={{ fontSize: '0.3rem', padding: 3 }}
+          />
+          <Button
+            variant={"danger"}
+            text={'remove trainer'}
+            onClick={() => handleOpenRemoveTrainer(row.id)}
+            style={{ fontSize: '0.3rem', padding: 3 }}
+          />
+        </div>
+      )
+    }
+  ]
+  const trainersData = trainers.map((t) => ({
+    id: t.id,
+    name: t.name,
+    count: t.activeClientCount || 0,
+  }))
   return (
     <div className="sidebar-layout">
       {/* Persistent Sidebar Navigation */}
@@ -370,8 +511,9 @@ export default function GymDashboard() {
               <div>
                 <h3>Quick Actions</h3>
               </div>
-              <div className='quick-action card'>
+              <div className='quick-action card' style={{ gap: 12 }}>
                 <Button variant={"secondary"} text={"Invite Trainer"} onClick={handleInviteTrainer}></Button>
+                <Button variant={"secondary"} text={"Invite Client"} onClick={handleInviteClient}></Button>
                 <Button variant={"secondary"} text={"Add / Manage Membership"} onClick={() => setShowCreateMembership(true)}></Button>
                 <Button variant={"primary"} text={"Post Announcement"} onClick={() => setTab('Announcements')}></Button>
               </div>
@@ -418,7 +560,10 @@ export default function GymDashboard() {
                         key={row.membershipId}
                         data={[row.name, `Expired: ${row.expiredDate}`]}
                         others={
-                          <Button variant="secondary" text="Deactivate" onClick={() => handleRemoveClient(row.membershipId)} />
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                            <Button variant="primary" text="Activate" onClick={() => handleOpenActivateModal(row)} />
+                            <Button variant="danger" text="Remove" onClick={() => handleOpenRemoveWarning(row)} />
+                          </div>
                         }
                       />
                     ))}
@@ -427,7 +572,7 @@ export default function GymDashboard() {
                   <Table columns={ExpiredClientsColumns} data={ExpiredMClientsData} />
                 )}
               </div>
-              
+
               <div className="card">
                 <h3 style={{ marginBottom: 16 }}>Latest Announcement</h3>
                 {announcements.length === 0 ? (
@@ -466,42 +611,57 @@ export default function GymDashboard() {
                   </button>
                 </div>
               ) : (
-                <div className="table-responsive">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>TRAINER</th>
-                        <th>EMAIL</th>
-                        <th>ACTIVE CLIENTS</th>
-                        <th>JOINED</th>
-                        <th>ACTION</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {trainers.map(t => (
-                        <tr key={t.id}>
-                          <td style={{ fontWeight: 600 }}>{t.name}</td>
-                          <td style={{ color: 'var(--text-secondary)' }}>{t.email}</td>
-                          <td>
-                            <span className="status-badge status-active">
-                              <span className="tick-mark">✓</span> {t.activeClientCount} Active
-                            </span>
-                          </td>
-                          <td style={{ color: 'var(--text-muted)' }}>
-                            {new Date(t.createdAt).toLocaleDateString()}
-                          </td>
-                          <td>
-                            <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleOpenRemoveTrainer(t)}
-                            >
-                              Remove
-                            </button>
-                          </td>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <SearchBar></SearchBar>
+                    <Button variant={"primary"} text={"+ Invite Trainer"} onClick={handleInviteTrainer}></Button>
+                  </div>
+                  {isMobile ?}
+                  <ClientCard>
+
+                  </ClientCard>
+                  columns={trainersColumns}
+                  data={trainersData}
+                  />
+
+                  <div className="table-responsive">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>TRAINER</th>
+                          <th>EMAIL</th>
+                          <th>ACTIVE CLIENTS</th>
+                          <th>JOINED</th>
+                          <th>ACTION</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {trainers.map(t => (
+                          <tr key={t.id}>
+                            <td style={{ fontWeight: 600 }}>{t.name}</td>
+                            <td style={{ color: 'var(--text-secondary)' }}>{t.email}</td>
+                            <td>
+                              <span className="status-badge status-active">
+                                <span className="tick-mark">✓</span> {t.activeClientCount} Active
+                              </span>
+                            </td>
+                            <td style={{ color: 'var(--text-muted)' }}>
+                              {new Date(t.createdAt).toLocaleDateString()}
+                            </td>
+                            <td>
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleOpenRemoveTrainer(t)}
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -712,17 +872,14 @@ export default function GymDashboard() {
 
       {/* ─── Invite Trainer Modal ─────────────────────────────────────────── */}
       {showTrainerInvite && (
-        <div className="sidebar-overlay mobile-open" onClick={() => setShowTrainerInvite(false)}>
+        <div className="modal-backdrop" onClick={() => setShowTrainerInvite(false)}>
           <div
             className="card"
             style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
+              position: 'relative',
               width: '90%',
               maxWidth: 480,
-              zIndex: 210,
+              zIndex: 260,
               margin: 0
             }}
             onClick={e => e.stopPropagation()}
@@ -758,19 +915,169 @@ export default function GymDashboard() {
         </div>
       )}
 
-      {/* ─── Create Membership Modal ──────────────────────────────────────── */}
-      {showCreateMembership && (
-        <div className="sidebar-overlay mobile-open" onClick={() => setShowCreateMembership(false)}>
+      {/* ─── Invite Client Modal ──────────────────────────────────────────── */}
+      {showClientInvite && (
+        <div className="modal-backdrop" onClick={() => setShowClientInvite(false)}>
           <div
             className="card"
             style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
+              position: 'relative',
               width: '90%',
               maxWidth: 480,
-              zIndex: 210,
+              zIndex: 260,
+              margin: 0
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: 12 }}>Invite Client to Gym</h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 20 }}>
+              Share this secure invite link with a client to join your gym facility and receive membership.
+            </p>
+
+            {clientInviteLoading ? (
+              <p style={{ color: 'var(--text-muted)' }}>Generating client invite link...</p>
+            ) : (
+              <div className="form-group">
+                <label className="form-label">Client Invite Link</label>
+                <input
+                  className="form-input"
+                  readOnly
+                  value={clientInviteLink}
+                  onClick={e => e.target.select()}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button className="btn btn-secondary" onClick={() => setShowClientInvite(false)}>
+                Close
+              </button>
+              <button className="btn btn-primary" onClick={handleCopyClientInviteLink} disabled={!clientInviteLink}>
+                Copy Link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Activate Membership Pop-up Modal ─────────────────────────────── */}
+      {showActivateModal && (
+        <div className="modal-backdrop" onClick={() => setShowActivateModal(false)}>
+          <div
+            className="card"
+            style={{
+              position: 'relative',
+              width: '90%',
+              maxWidth: 480,
+              zIndex: 260,
+              margin: 0
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: 12 }}>Activate Membership</h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 16 }}>
+              Set active membership duration for <strong>{activatingClientName}</strong>.
+            </p>
+            <form onSubmit={handleConfirmActivateMembership}>
+              <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label className="form-label">Start Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={activateStartDate}
+                    onChange={e => setActivateStartDate(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="form-label">End Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={activateEndDate}
+                    onChange={e => setActivateEndDate(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowActivateModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={activatingLoading}
+                >
+                  {activatingLoading ? 'Activating...' : 'Activate'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Remove Membership Warning Modal ───────────────────────────────── */}
+      {showRemoveWarningModal && (
+        <div className="modal-backdrop" onClick={() => setShowRemoveWarningModal(false)}>
+          <div
+            className="card"
+            style={{
+              position: 'relative',
+              width: '90%',
+              maxWidth: 480,
+              zIndex: 260,
+              margin: 0
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: 12, color: 'var(--error)' }}>⚠️ Remove Client Membership</h3>
+            <p style={{ color: 'var(--text-primary)', fontSize: '0.95rem', marginBottom: 16, lineHeight: 1.5 }}>
+              Are you sure you want to remove <strong>{clientToRemoveName}</strong>'s membership?
+            </p>
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, padding: 12, marginBottom: 20 }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+                💡 <strong>Notice:</strong> You will need to send an invitation link again to re-add this client to the gym facility.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowRemoveWarningModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                disabled={removingMembershipLoading}
+                onClick={handleConfirmRemoveMembership}
+              >
+                {removingMembershipLoading ? 'Removing...' : 'Confirm Remove'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Create Membership Modal ──────────────────────────────────────── */}
+      {showCreateMembership && (
+        <div className="modal-backdrop" onClick={() => setShowCreateMembership(false)}>
+          <div
+            className="card"
+            style={{
+              position: 'relative',
+              width: '90%',
+              maxWidth: 480,
+              zIndex: 260,
               margin: 0
             }}
             onClick={e => e.stopPropagation()}
@@ -859,17 +1166,14 @@ export default function GymDashboard() {
 
       {/* ─── Assign Coach Modal ───────────────────────────────────────────── */}
       {showAssignCoach && (
-        <div className="sidebar-overlay mobile-open" onClick={() => setShowAssignCoach(false)}>
+        <div className="modal-backdrop" onClick={() => setShowAssignCoach(false)}>
           <div
             className="card"
             style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
+              position: 'relative',
               width: '90%',
               maxWidth: 480,
-              zIndex: 210,
+              zIndex: 260,
               margin: 0
             }}
             onClick={e => e.stopPropagation()}
@@ -932,17 +1236,14 @@ export default function GymDashboard() {
 
       {/* ─── Remove Trainer Modal ─────────────────────────────────────────── */}
       {showRemoveTrainer && trainerToRemove && (
-        <div className="sidebar-overlay mobile-open" onClick={() => setShowRemoveTrainer(false)}>
+        <div className="modal-backdrop" onClick={() => setShowRemoveTrainer(false)}>
           <div
             className="card"
             style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
+              position: 'relative',
               width: '90%',
               maxWidth: 480,
-              zIndex: 210,
+              zIndex: 260,
               margin: 0
             }}
             onClick={e => e.stopPropagation()}

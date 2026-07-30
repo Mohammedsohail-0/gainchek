@@ -20,9 +20,10 @@ button {
     font-weight: 500;
     border: 2px solid var(--accent);
 }
-.danger{
-     background-color: transparent;
+
+.danger {
+    background-color: transparent;
     color: var(--error);
     font-weight: 500;
-    border: 1px dotted var(--error);
+    border: 3px dotted var(--error);
 }

@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 const NAV_ITEMS = [
-  { id: 'Overview', label: 'Overview', icon: '📊' },
-  { id: 'Trainers', label: 'Trainers', icon: '🏋️' },
-  { id: 'Clients', label: 'Clients', icon: '👥' },
-  { id: 'Memberships', label: 'Memberships', icon: '💳' },
-  { id: 'Announcements', label: 'Announcements', icon: '📣' },
+  { id: 'Overview', label: 'Home', icon: '' },
+  { id: 'Trainers', label: 'Trainers', icon: '' },
+  { id: 'Clients', label: 'Clients', icon: '' },
+  { id: 'Memberships', label: 'Memberships', icon: '' },
+  { id: 'Announcements', label: 'Announcements', icon: '' },
 ]
 
 export default function Sidebar({ activeTab, onTabChange, gymName }) {
@@ -40,7 +40,7 @@ export default function Sidebar({ activeTab, onTabChange, gymName }) {
             ☰
           </button>
           <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.2rem' }}>
-            GainChek <span className="brand-tick">✓</span>
+            GainChek <span className="brand-tick"></span>
           </span>
         </div>
         <span className="role-badge role-gym_owner">Gym Owner</span>
@@ -56,7 +56,7 @@ export default function Sidebar({ activeTab, onTabChange, gymName }) {
       <aside className={`sidebar${mobileOpen ? ' mobile-open' : ''}`}>
         <div className="sidebar-content">
           <div className="sidebar-brand">
-            GainChek <span className="brand-tick">✓</span>
+            GainChek <span className="brand-tick"></span>
           </div>
 
           {gymName && (
@@ -84,7 +84,7 @@ export default function Sidebar({ activeTab, onTabChange, gymName }) {
                 >
                   <span>{item.icon}</span>
                   <span style={{ flex: 1, textAlign: 'left' }}>{item.label}</span>
-                  {isActive && <span className="tick-mark">✓</span>}
+                  {isActive && <span className="tick-mark"></span>}
                 </button>
               )
             })}

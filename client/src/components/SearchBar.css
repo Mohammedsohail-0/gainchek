@@ -1,0 +1,23 @@
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--border-secondary);
+    border-radius: 50px;
+    background-color: var(--surface-hover);
+    color: var(--text-primary);
+    width: 100%;
+    max-width: 200px;
+}
+
+.search-container input {
+    background: none;
+    border: none;
+    outline: none;
+    padding: 10px;
+}
+
+.search-container input:focus {
+    outline: none;
+    border: none;
+}

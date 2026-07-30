@@ -25,6 +25,7 @@ enum ClientGoal {
 enum InviteType {
   GYM_TO_COACH
   COACH_TO_CLIENT
+  GYM_TO_CLIENT
 }
 
 enum MembershipType {

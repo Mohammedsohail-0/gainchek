@@ -131,17 +131,17 @@ router.post('/trainers/reassign', async (req, res, next) => {
     });
     if (!toCoach) return next(new NotFoundError('Target trainer not found in this gym.'));
 
-    // Verify client exists and their current coach is in this gym (or client is inactive/unassigned)
+    // Verify client exists and check their gym/coaching association
     const client = await prisma.clientProfile.findUnique({
       where: { id: clientId },
-      include: { coach: true }
+      include: { coach: true, memberships: { where: { gymId: req.gym.id } } }
     });
     if (!client) return next(new NotFoundError('Client not found.'));
 
-    // Allow reassignment if: client's coach is in this gym, OR client is inactive
-    const currentCoachInGym = client.coach?.gymId === req.gym.id;
-    if (client.isActive && !currentCoachInGym) {
-      return next(new ForbiddenError('Client does not belong to a trainer in your gym.'));
+    // Allow assigning if: client has a membership in this gym, is unassigned (!coachId), current coach is in this gym, or client is inactive
+    const isClientInGym = client.memberships.length > 0 || !client.coachId || client.coach?.gymId === req.gym.id || !client.isActive;
+    if (!isClientInGym) {
+      return next(new ForbiddenError('Client does not belong to your gym facility.'));
     }
 
     const updated = await prisma.clientProfile.update({
@@ -159,16 +159,13 @@ router.post('/trainers/reassign', async (req, res, next) => {
 
 /**
  * GET /gym/clients
- * All active clients across all trainers in this gym.
+ * All clients with a membership in this gym facility.
  */
 router.get('/clients', async (req, res, next) => {
   try {
     const clients = await prisma.clientProfile.findMany({
       where: {
-        OR: [
-          { coach: { gymId: req.gym.id } },
-          { memberships: { some: { gymId: req.gym.id } } }
-        ]
+        memberships: { some: { gymId: req.gym.id } }
       },
       include: {
         user: { select: { email: true } },
@@ -194,18 +191,38 @@ router.get('/clients', async (req, res, next) => {
 });
 
 /**
+ * POST /gym/clients/invite
+ * Generate a GYM_TO_CLIENT invitation link.
+ */
+router.post('/clients/invite', async (req, res, next) => {
+  try {
+    const invitation = await prisma.invitation.create({
+      data: {
+        type: 'GYM_TO_CLIENT',
+        gymId: req.gym.id,
+      }
+    });
+
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    res.json({
+      inviteCode: invitation.inviteCode,
+      inviteLink: `${clientUrl}/register?invite=${invitation.inviteCode}`,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * GET /gym/clients/:clientId
- * Single client detail (scoped through gym's coaches).
+ * Single client detail (scoped through gym memberships).
  */
 router.get('/clients/:clientId', async (req, res, next) => {
   try {
     const client = await prisma.clientProfile.findFirst({
       where: {
         id: req.params.clientId,
-        OR: [
-          { coach: { gymId: req.gym.id } },
-          { memberships: { some: { gymId: req.gym.id } } }
-        ]
+        memberships: { some: { gymId: req.gym.id } }
       },
       include: {
         user: { select: { email: true } },
@@ -231,6 +248,8 @@ router.get('/clients/:clientId', async (req, res, next) => {
 router.get('/memberships', async (req, res, next) => {
   try {
     const { status } = req.query; // ?status=expired | ?status=active
+
+    const where = { gymId: req.gym.id };
 
     if (status === 'expired') {
       where.OR = [
@@ -334,11 +353,10 @@ router.delete('/memberships/:id', async (req, res, next) => {
     });
     if (!existing) return next(new NotFoundError('Membership not found.'));
 
-    await prisma.gymMembership.update({
-      where: { id: req.params.id },
-      data: { isActive: false }
+    await prisma.gymMembership.delete({
+      where: { id: req.params.id }
     });
-    res.json({ message: 'Membership deactivated.' });
+    res.json({ message: 'Membership removed successfully.' });
   } catch (err) {
     next(err);
   }
