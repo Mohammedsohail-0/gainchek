@@ -194,7 +194,7 @@ ol {
   color: var(--text-primary);
   margin-bottom: var(--space-6);
   padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--border-secondary);
+  border-bottom: none;
 }
 
 .brand-tick {
@@ -232,7 +232,7 @@ ol {
 
 .sidebar-footer {
   padding-top: var(--space-4);
-  border-top: 1px solid var(--border-secondary);
+  border-top: none;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -253,7 +253,7 @@ ol {
   display: none;
   height: 60px;
   background: var(--surface, #18181b);
-  border-bottom: 1px solid var(--border-secondary, #27272a);
+  border-bottom: none;
   padding: 0 16px;
   align-items: center;
   justify-content: space-between;

@@ -637,7 +637,7 @@ export default function GymDashboard() {
   return (
     <div className="sidebar-layout">
       {/* Persistent Sidebar Navigation */}
-      <Sidebar activeTab={tab} onTabChange={setTab} gymName={gym?.name} />
+      <Sidebar activeTab={tab} onTabChange={setTab} />
 
       <div className="main-wrapper">
         <main className="page-content">
