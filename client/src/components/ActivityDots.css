@@ -1,0 +1,19 @@
+.activity-dots {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-3)
+}
+
+.dot-empty {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 50px;
+}
+
+.dot-active {
+    width: 20px;
+    height: 20px;
+    border-radius: 50px;
+    color: var(--accent);
+}

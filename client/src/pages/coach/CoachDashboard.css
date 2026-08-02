@@ -1,0 +1,44 @@
+.hero {
+    display: grid;
+    grid-template-columns: auto auto;
+    margin-block: 5rem;
+}
+
+.search-bar-add-client-wrapper {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.clients-table-header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    align-items: center;
+    margin-block: 1.8rem;
+}
+
+/* Dashboard.css — scoped override, only affects cards inside dashboard */
+.dashboard-client-card.ClientCard {
+    grid-template-columns: 140px 1fr;
+    grid-template-areas:
+        "profile data"
+        "others  others";
+    gap: 24px 32px;
+}
+
+.dashboard-client-card.ClientCard .profile {
+    grid-area: profile;
+}
+
+.dashboard-client-card.ClientCard .data {
+    grid-area: data;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+}
+
+.dashboard-client-card.ClientCard .others {
+    grid-area: others;
+    width: 100%;
+}
