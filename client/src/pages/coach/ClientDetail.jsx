@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import api from '../../services/api'
+import ClientCard from '../../components/ClientCard'
 
 const GOAL_LABELS = {
   BUILD_MUSCLE: 'Build Muscle',
@@ -177,28 +178,34 @@ export default function ClientDetail() {
 
   return (
     <div>
-      {/* Back button and page title */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <button
-          className="btn btn-secondary btn-sm"
-          onClick={() => navigate('/coach')}
+
+      <div>
+        <ClientCard
+          pSize={"md"}
+          data={[
+            <>
+              <div className='client-name'>
+                {client.name}
+              </div>
+              <div>
+                <span>{client.user.email}</span>
+                <div>
+                  <span>age: {client.age}, </span>
+                  <span>gender: {client.gender}</span>
+                </div>
+                <span>Body weight: {latestBw} </span>
+                <span>Goal: {(client.goal ? client.goal.replace(/_/g, " ") : "not set yet").toLowerCase()}</span>
+              </div>
+            </>
+          ]}
+          others={
+            <button>
+              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-160q-33 0-56.5-23.5T400-240q0-33 23.5-56.5T480-320q33 0 56.5 23.5T560-240q0 33-23.5 56.5T480-160Zm0-240q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm0-240q-33 0-56.5-23.5T400-720q0-33 23.5-56.5T480-800q33 0 56.5 23.5T560-720q0 33-23.5 56.5T480-640Z" /></svg>
+            </button>
+          }
         >
-          ← Back to Clients
-        </button>
-
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => navigate(`/coach/clients/${id}/plan/create`)}
-          >
-            + Create New Plan
-          </button>
-          <button className="btn btn-danger btn-sm" onClick={() => setShowRemove(true)}>
-            Remove Client
-          </button>
-        </div>
+        </ClientCard>
       </div>
-
       {/* Client Profile Overview Card */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>

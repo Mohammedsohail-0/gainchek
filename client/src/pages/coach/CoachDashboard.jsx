@@ -9,6 +9,7 @@ import ActivityDots from '../../components/ActivityDots';
 import Table from '../../components/Table';
 import Profile from '../../components/Profile';
 import ClientCard from '../../components/ClientCard';
+import InviteClientModal from '../../components/InviteClientModal';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
 
@@ -86,7 +87,7 @@ export default function CoachDashboard() {
       key: 'client', label: 'CLIENT',
       render: (client) => (
         <div className='profile-cell'>
-          <Profile name={client.name} size={"lg"} />
+          <Profile name={client.name} size={"md"} />
         </div>
       )
     },
@@ -150,9 +151,10 @@ export default function CoachDashboard() {
       </div>
 
       {isMobile ? (
-        <div>
+        <div className='client-card-container'>
           {Tdata.map((client) => (
             <ClientCard onClick={() => navigate(`/coach/clients/${client.id}`)}
+              pSize={"md"}
               className="dashboard-client-card"
               key={client.id}
               data={[
@@ -162,14 +164,13 @@ export default function CoachDashboard() {
                 </div>
               ]}
               others={
-                <div className="activity-dots">
+                <div className="activity-dots-container" style={{ width: "100%" }}>
                   <ActivityDots workoutLogs={client.workoutLogs} />
                 </div>
               }
             />
           ))}
         </div>
-
       ) : (
         <Table columns={Tcoloumns} data={Tdata}></Table>
       )}

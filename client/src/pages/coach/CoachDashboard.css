@@ -18,27 +18,32 @@
 }
 
 /* Dashboard.css — scoped override, only affects cards inside dashboard */
-.dashboard-client-card.ClientCard {
-    grid-template-columns: 140px 1fr;
-    grid-template-areas:
-        "profile data"
-        "others  others";
-    gap: 24px 32px;
-}
-
-.dashboard-client-card.ClientCard .profile {
-    grid-area: profile;
-}
-
-.dashboard-client-card.ClientCard .data {
-    grid-area: data;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 8px;
-}
-
-.dashboard-client-card.ClientCard .others {
-    grid-area: others;
+.dashboard-client-card .card-body {
+    display: grid;
+    grid-template-columns: 100px 1fr;
     width: 100%;
+}
+
+
+
+.client-card-container {
+    display: contents;
+    justify-content: center;
+}
+
+
+.dashboard-client-card .others {
+    grid-column: 1 / -1;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.activity-dots-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-inline: 1.9rem;
+
 }

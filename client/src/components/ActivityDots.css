@@ -1,7 +1,9 @@
 .activity-dots {
     display: flex;
     flex-direction: row;
-    gap: var(--space-3)
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
 }
 
 .dot-empty {
