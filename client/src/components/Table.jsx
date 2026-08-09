@@ -2,9 +2,9 @@ import "./Table.css";
 import React from "react";
 
 
-function Table({ columns, data }) {
+function Table({ className, columns, data }) {
   return (
-    <table>
+    <table className={className}>
       <thead>
         <tr>
           {columns.map((col) => (

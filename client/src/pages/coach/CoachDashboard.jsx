@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { data, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './CoachDashboard.css';
 import api from '../../services/api';
 import Button from '../../components/Button';
@@ -82,7 +82,7 @@ export default function CoachDashboard() {
     }
   };
 
-  const Tcoloumns = [
+  const Tcolumns = [
     {
       key: 'client', label: 'CLIENT',
       render: (client) => (
@@ -172,7 +172,7 @@ export default function CoachDashboard() {
           ))}
         </div>
       ) : (
-        <Table columns={Tcoloumns} data={Tdata}></Table>
+        <Table columns={Tcolumns} data={Tdata}></Table>
       )}
 
 

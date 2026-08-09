@@ -1,15 +1,17 @@
 import React from "react";
 import "./Button.css";
 
-function Button({ text, variant, className, onClick }) {
+function Button({ text, children, variant, className = "", onClick, ...props }) {
+    const combinedClassName = ["btn-component", className, variant].filter(Boolean).join(" ");
     return (
         <button
-            className={`${className} ${variant}`}
+            className={combinedClassName}
             onClick={onClick}
-            >
-            {text}
-        </button >
-    )
+            {...props}
+        >
+            {children || text}
+        </button>
+    );
 }
 
 export default Button;
