@@ -27,6 +27,91 @@ router.get('/profile', async (req, res, next) => {
   }
 });
 
+/**
+ * PUT /coach/profile
+ * Update coach display name.
+ */
+router.put('/profile', async (req, res, next) => {
+  try {
+    const { name } = req.body;
+    if (name !== undefined && name !== null) {
+      await prisma.user.update({
+        where: { id: req.user.userId },
+        data: { name: name.trim() }
+      });
+    }
+    const coach = await prisma.coachProfile.findUnique({
+      where: { id: req.coach.id },
+      include: {
+        user: { select: { name: true, email: true } },
+        gym: { select: { id: true, name: true } }
+      }
+    });
+    res.json(coach);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /coach/join-gym
+ * Redeem a GYM_TO_COACH invite code to link with a gym.
+ */
+router.post('/join-gym', async (req, res, next) => {
+  try {
+    if (req.coach.gymId) {
+      return next(new BadRequestError('You are already affiliated with a gym. Please leave your current gym before joining a new one.'));
+    }
+
+    const { inviteCode } = req.body;
+    if (!inviteCode || typeof inviteCode !== 'string') {
+      return next(new BadRequestError('Invite code is required.'));
+    }
+
+    const invitation = await prisma.invitation.findUnique({
+      where: { inviteCode: inviteCode.trim() }
+    });
+
+    if (!invitation || invitation.type !== 'GYM_TO_COACH' || !invitation.gymId) {
+      return next(new BadRequestError('Invalid or expired gym invite code.'));
+    }
+
+    const updatedCoach = await prisma.coachProfile.update({
+      where: { id: req.coach.id },
+      data: { gymId: invitation.gymId },
+      include: {
+        user: { select: { name: true, email: true } },
+        gym: { select: { id: true, name: true } }
+      }
+    });
+
+    res.json(updatedCoach);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /coach/leave-gym
+ * Unassign coach from current gym facility (sets gymId to null).
+ */
+router.post('/leave-gym', async (req, res, next) => {
+  try {
+    const updatedCoach = await prisma.coachProfile.update({
+      where: { id: req.coach.id },
+      data: { gymId: null },
+      include: {
+        user: { select: { name: true, email: true } },
+        gym: { select: { id: true, name: true } }
+      }
+    });
+
+    res.json({ message: 'Successfully left gym facility.', coach: updatedCoach });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── Clients ──────────────────────────────────────────────────────────────────
 
 /**

@@ -6,11 +6,13 @@ import Logo from './Logo'
 const COACH_LINKS = [
   { to: '/coach', label: 'Dashboard' },
   { to: '/coach/templates', label: 'Templates' },
+  { to: '/coach/settings', label: 'Settings' },
 ]
 
 const CLIENT_LINKS = [
   { to: '/client', label: 'Home' },
   { to: '/client/plan', label: 'My Plan' },
+  { to: '/client/settings', label: 'Settings' },
 ]
 
 export default function Navbar() {

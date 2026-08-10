@@ -1,263 +1,253 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { toast } from 'react-toastify'
-import { useAuth } from '../../context/AuthContext'
-import api from '../../services/api'
+import './ClientHome.css';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import api from '../../services/api';
+import Button from '../../components/Button';
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const WEEKDAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const WEEKDAY_SHORT_MON = ['M', 'T', 'W', 'Th', 'F', 'S', 'Su'];
 
-function WeekStrip({ loggedDays = [] }) {
-  const today = new Date()
-  return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(7, 1fr)',
-      gap: 6,
-      background: 'var(--surface)',
-      border: '1px solid var(--border-secondary)',
-      borderRadius: 'var(--radius-card)',
-      padding: 12,
-      marginBottom: 24,
-      textAlign: 'center'
-    }}>
-      {DAYS.map((d, i) => {
-        const date = new Date()
-        date.setDate(today.getDate() - today.getDay() + i)
-        const isToday = date.toDateString() === today.toDateString()
-        const dayOfMonth = date.getDate()
-        const isLogged = loggedDays.includes(dayOfMonth)
-        return (
-          <div
-            key={d}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              padding: '8px 4px',
-              borderRadius: 'var(--radius-md)',
-              background: isToday ? 'var(--accent-dim)' : 'transparent',
-              border: isToday ? '1px solid var(--accent)' : '1px solid transparent'
-            }}
-          >
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{d.slice(0, 2)}</span>
-            <span style={{ fontSize: '1rem', fontWeight: 700, margin: '2px 0' }}>{dayOfMonth}</span>
-            <div style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: isLogged ? 'var(--accent)' : 'var(--border-secondary)',
-              marginTop: 4
-            }} />
-          </div>
-        )
-      })}
-    </div>
-  )
-}
+const isSameDay = (a, b) =>
+  Boolean(a && b && !isNaN(new Date(a)) && !isNaN(new Date(b)) &&
+    new Date(a).getFullYear() === new Date(b).getFullYear() &&
+    new Date(a).getMonth() === new Date(b).getMonth() &&
+    new Date(a).getDate() === new Date(b).getDate());
 
-function TodayWorkoutCard({ plan, navigate }) {
-  if (!plan) {
-    return (
-      <div className="empty-state">
-        <div className="empty-icon">📋</div>
-        <div className="empty-title">No Active Plan</div>
-        <div className="empty-text">Your trainer hasn't assigned a workout plan yet. Check back soon!</div>
-      </div>
-    )
-  }
+// Returns Monday..Sunday Date objects for the week containing `today`
+const getWeekDates = (today) => {
+  const start = new Date(today);
+  start.setHours(0, 0, 0, 0);
+  const day = start.getDay();
+  const diff = day === 0 ? 6 : day - 1; // Offset to get Monday
+  start.setDate(today.getDate() - diff);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    return d;
+  });
+};
 
-  const today = DAYS[new Date().getDay()]
-  const todaySplit = plan.workoutSplits?.find(s => s.day?.toLowerCase() === today.toLowerCase())
+function ClientHome() {
+  const navigate = useNavigate();
 
-  if (!todaySplit || todaySplit.isRestDay) {
-    return (
-      <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-        <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🛌</div>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: 4 }}>Rest & Recovery Day</h3>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          Take time to recover today. Hydrate, eat well, and stay active with light walking.
-        </p>
-      </div>
-    )
-  }
+  const [profile, setProfile] = useState(null);
+  const [plan, setPlan] = useState(null);
+  const [planError, setPlanError] = useState('');
+  const [weightLogs, setWeightLogs] = useState([]);
+  const [workoutLogs, setWorkoutLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  return (
-    <div
-      className="card card-interactive"
-      onClick={() => navigate(`/client/log/${todaySplit.id}`)}
-      style={{ borderLeft: '4px solid var(--accent)' }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-        <div>
-          <span className="status-badge status-active" style={{ marginBottom: 8 }}>
-            Today's Session
-          </span>
-          <h2 style={{ fontSize: '1.3rem', marginBottom: 4 }}>
-            {todaySplit.name || todaySplit.day + ' Workout'}
-          </h2>
-          {todaySplit.muscleGroups && (
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-              🎯 {todaySplit.muscleGroups}
-            </p>
-          )}
-        </div>
-        <button className="btn btn-primary">
-          Start Workout →
-        </button>
-      </div>
+  const [weightInput, setWeightInput] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {(todaySplit.exercises || []).filter(ex => !ex.isArchived).slice(0, 5).map(ex => (
-          <span
-            key={ex.id}
-            style={{
-              background: 'var(--bg)',
-              border: '1px solid var(--border-secondary)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '4px 10px',
-              fontSize: '0.8rem',
-              color: 'var(--text-primary)'
-            }}
-          >
-            {ex.name}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-export default function ClientHome() {
-  const { name } = useAuth()
-  const navigate = useNavigate()
-
-  const [profile, setProfile] = useState(null)
-  const [plan, setPlan] = useState(null)
-  const [streak, setStreak] = useState({ streak: 0, longestStreak: 0 })
-  const [calendar, setCalendar] = useState(null)
-  const [announcements, setAnnouncements] = useState([])
-  const [loading, setLoading] = useState(true)
+  const today = new Date();
+  const todayName = WEEKDAY_NAMES[today.getDay()];
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [profileRes, streakRes, calRes, annRes] = await Promise.all([
+        const [profileRes, weightRes, historyRes] = await Promise.all([
           api.get('/client/profile'),
-          api.get('/analytics/streak'),
-          api.get('/analytics/calendar'),
-          api.get('/client/announcements'),
-        ])
-        setProfile(profileRes.data)
-        setStreak(streakRes.data)
-        setCalendar(calRes.data)
-        setAnnouncements(annRes.data)
+          api.get('/client/bodyweight'),
+          api.get('/log/history')
+        ]);
+        setProfile(profileRes.data);
 
         if (!profileRes.data.goal) {
-          navigate('/client/onboarding', { replace: true })
-          return
+          navigate('/client/onboarding');
+          return;
         }
+
+        setWeightLogs(Array.isArray(weightRes.data) ? weightRes.data : []);
+        setWorkoutLogs(Array.isArray(historyRes.data?.logs) ? historyRes.data.logs : (Array.isArray(historyRes.data) ? historyRes.data : []));
 
         try {
-          const planRes = await api.get('/client/plan')
-          setPlan(planRes.data)
-        } catch (e) {
-          if (e.response?.status !== 404) toast.error("Couldn't load plan")
+          const planRes = await api.get('/client/plan');
+          setPlan(planRes.data);
+        } catch (err) {
+          if (err.response?.status === 404) {
+            setPlanError('No active plan yet — check back once your coach sets one up.');
+          } else {
+            setPlanError("Couldn't load your plan.");
+          }
         }
-      } catch {
-        toast.error('Failed to load dashboard')
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to load profile data.');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
+    };
+    load();
+  }, [navigate]);
+
+  const handleLogWeight = async () => {
+    const weightNum = Number(weightInput);
+    if (!weightInput || isNaN(weightNum) || weightNum <= 0) {
+      toast.error('Please enter a valid weight.');
+      return;
     }
-    load()
-  }, [navigate])
+
+    setSubmitting(true);
+    try {
+      const res = await api.post('/client/bodyweight', { weight: weightNum });
+      setWeightLogs((prev) => [res.data, ...prev]);
+      setWeightInput('');
+      toast.success('Bodyweight logged!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save bodyweight log.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const hasLoggedToday = weightLogs.some((log) => isSameDay(log.loggedAt, today));
+
+  const todaySplit = plan?.workoutSplits?.find((s) => s.day?.toLowerCase() === todayName);
+
+  const loggedToday = workoutLogs.some(
+    (log) => log.splitId === todaySplit?.id && isSameDay(log.loggedAt, today)
+  );
+
+  const muscleGroupList = (split) => {
+    if (!split) return [];
+    if (split.exercises?.length) {
+      const groups = split.exercises
+        .map((e) => e.muscleGroup)
+        .filter((mg) => mg && typeof mg === 'string' && mg.trim() !== '');
+      if (groups.length > 0) return [...new Set(groups)];
+    }
+    if (split.muscleGroups) {
+      if (Array.isArray(split.muscleGroups)) return split.muscleGroups;
+      return split.muscleGroups.split(',').map((m) => m.trim()).filter(Boolean);
+    }
+    return [];
+  };
+
+  const weekDates = getWeekDates(today);
 
   if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-secondary)' }}>
-        Loading workout dashboard...
-      </div>
-    )
+    return <p className="loading-text">Loading...</p>;
   }
 
-  return (
-    <div>
-      {/* Greeting */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 className="page-title">Welcome, {profile?.name || name} 👋</h1>
-        <p>
-          Trainer:{' '}
-          <strong style={{ color: 'var(--text-primary)' }}>
-            {profile?.coach?.user?.name || 'Assigned Coach'}
-          </strong>
-        </p>
-      </div>
+  const clientName = profile?.name || profile?.user?.name || 'there';
+  const trainerName = profile?.coach?.user?.name || profile?.coach?.name;
+  const gymName = profile?.coach?.gym?.name || profile?.memberships?.[0]?.gym?.name;
 
-      {/* Announcement notice */}
-      {announcements.length > 0 && (
-        <div style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--border-secondary)',
-          borderRadius: 'var(--radius-card)',
-          padding: 16,
-          marginBottom: 24,
-          display: 'flex',
-          gap: 12,
-          alignItems: 'flex-start'
-        }}>
-          <span style={{ fontSize: '1.4rem' }}>📣</span>
-          <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
-              Gym Announcement
-            </div>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-              {announcements[0].message}
-            </p>
+  return (
+    <div className="client-home">
+      <h1 className="client-greeting">Hey, {clientName}</h1>
+
+      {(trainerName) && (
+        <div className="client-meta-badges">
+          {trainerName && (
+            <span className="client-meta-badge">
+              <span className="badge-label">Trainer:</span> {trainerName}
+            </span>
+          )}
+        </div>
+      )}
+
+      {!hasLoggedToday ? (
+        <div className="bodyweight-input-section">
+          <p className="bodyweight-label">Enter Today's Body Weight</p>
+          <div className="bodyweight-input-wrapper">
+            <input
+              type="number"
+              className="bodyweight-input"
+              placeholder="kg"
+              value={weightInput}
+              onChange={(e) => setWeightInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleLogWeight(); }}
+              min="1"
+              step="0.1"
+            />
+          </div>
+          <Button
+            variant="primary"
+            text={submitting ? 'Saving...' : 'Enter'}
+            onClick={handleLogWeight}
+            disabled={submitting || !weightInput}
+          />
+        </div>
+      ) : (
+        <div className="week-strip-container">
+          <div className="week-strip">
+            {weekDates.map((d, i) => {
+              const isToday = isSameDay(d, today);
+              const logged = weightLogs.some((log) => isSameDay(log.loggedAt, d));
+              return (
+                <div key={d.toISOString()} className={`week-strip-day ${isToday ? 'active' : ''}`}>
+                  <span className="day-label">{WEEKDAY_SHORT_MON[i]}</span>
+                  <span className="day-date">{d.getDate()}</span>
+                  <span className={`day-dot ${logged ? 'logged' : ''}`}></span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Quick Stats Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-        gap: 12,
-        marginBottom: 24
-      }}>
-        <div className="card" style={{ marginBottom: 0 }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 4 }}>Current Streak</div>
-          <div style={{ fontSize: '1.6rem', fontFamily: 'var(--font-heading)', fontWeight: 800, color: 'var(--accent)' }}>
-            🔥 {streak.streak} Days
-          </div>
-        </div>
-        <div className="card" style={{ marginBottom: 0 }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 4 }}>Best Streak</div>
-          <div style={{ fontSize: '1.6rem', fontFamily: 'var(--font-heading)', fontWeight: 800 }}>
-            🏆 {streak.longestStreak} Days
-          </div>
-        </div>
-        {profile?.bodyWeight && (
-          <div className="card" style={{ marginBottom: 0 }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 4 }}>Body Weight</div>
-            <div style={{ fontSize: '1.6rem', fontFamily: 'var(--font-heading)', fontWeight: 800 }}>
-              ⚖️ {profile.bodyWeight} kg
+      <section className="today-workout-section">
+        <h2>Today's workout</h2>
+
+        {planError && <p className="empty-state">{planError}</p>}
+
+        {!planError && todaySplit && (
+          <div className="today-workout-card">
+            <div className="today-workout-card-header">
+              <span className="split-name">{todaySplit.name || 'Workout'}</span>
+              <span className="split-day">
+                {todayName.charAt(0).toUpperCase() + todayName.slice(1)}
+              </span>
             </div>
+
+            {todaySplit.isRestDay ? (
+              <p className="rest-day-text">Rest day — recover well.</p>
+            ) : (
+              <div className="today-workout-card-body">
+                <ul className="muscle-group-list">
+                  {muscleGroupList(todaySplit).length > 0 ? (
+                    muscleGroupList(todaySplit).map((mg, i) => (
+                      <li key={i}>{mg}</li>
+                    ))
+                  ) : (
+                    <li>Targeted Workout</li>
+                  )}
+                </ul>
+                <Button
+                  variant="secondary"
+                  text="View Exercises"
+                  className="view-exercise-btn"
+                  onClick={() => navigate('/client/plan', { state: { openSplitId: todaySplit.id } })}
+                />
+              </div>
+            )}
           </div>
         )}
-      </div>
 
-      {/* Week Activity Strip */}
-      {calendar && <WeekStrip loggedDays={calendar.loggedDays} />}
+        {!planError && !todaySplit && (
+          <p className="empty-state">Nothing scheduled for today.</p>
+        )}
+      </section>
 
-      {/* Today's Workout */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ fontSize: '1.2rem' }}>Today's Schedule</h2>
-        <button className="btn btn-secondary btn-sm" onClick={() => navigate('/client/plan')}>
-          View Full Plan →
-        </button>
-      </div>
+      {!planError && todaySplit && !todaySplit.isRestDay && (
+        loggedToday ? (
+          <p className="workout-done-note">You've already logged today's workout. Nice work — see you tomorrow.</p>
+        ) : (
+          <Button
+            variant="primary"
+            text="Start Workout"
+            className="start-workout-btn"
+            onClick={() => navigate(`/client/log/${todaySplit.id}`)}
+          />
+        )
+      )}
 
-      <TodayWorkoutCard plan={plan} navigate={navigate} />
     </div>
-  )
+  );
 }
+
+export default ClientHome;

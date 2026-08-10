@@ -1,0 +1,320 @@
+.client-home {
+    padding: 20px 16px 40px;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.client-greeting {
+    font-family: var(--font-heading);
+    font-size: 1.65rem;
+    font-weight: 700;
+    margin-block: 12px 8px;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+.client-meta-badges {
+    display: flex;
+    gap: 2px;
+    margin-block: 0 20px;
+}
+
+.client-meta-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-top: -10px;
+}
+
+.client-meta-badge .badge-icon {
+    font-size: 0.95rem;
+}
+
+.client-meta-badge .badge-label {
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+/* Bodyweight input state */
+.bodyweight-input-section {
+    text-align: center;
+    margin-block: 2rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-card);
+    padding: 24px 20px;
+}
+
+.bodyweight-label {
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.bodyweight-input-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 18px;
+}
+
+.bodyweight-input {
+    width: 140px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--border);
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 8px 12px;
+    font-family: var(--font-heading);
+    transition: border-color var(--transition-fast);
+}
+
+.bodyweight-input::-webkit-outer-spin-button,
+.bodyweight-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.bodyweight-input[type=number] {
+    -moz-appearance: textfield;
+}
+
+.bodyweight-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.bodyweight-input-section .btn-component {
+    min-width: 140px;
+}
+
+/* Week strip */
+.week-strip-container {
+    margin-block: 2.5rem 3rem;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.week-strip {
+    background-color: var(--surface);
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 24px;
+    height: 64px;
+    padding: 40px 10px;
+    position: relative;
+    overflow: visible;
+    width: 100%;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.week-strip-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex: 1;
+    height: 52px;
+    border-radius: 20px;
+    border: 2px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.week-strip-day.active {
+    background-color: var(--surface-hover);
+    border-color: var(--accent);
+    height: 110px;
+    min-width: 52px;
+    z-index: 10;
+    border-radius: var(--radius-card);
+    gap: 10px;
+    box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.day-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+    line-height: 1;
+}
+
+.week-strip-day.active .day-label {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.day-date {
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.week-strip-day.active .day-date {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.day-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: transparent;
+    transition: all var(--transition-fast);
+}
+
+.week-strip-day.active .day-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent-glow);
+}
+
+.day-dot.logged {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent-glow);
+}
+
+.week-strip-day.active .day-dot.logged {
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* Today's workout */
+.today-workout-section {
+    margin-bottom: 24px;
+}
+
+.today-workout-section h2 {
+    font-size: 1.15rem;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.today-workout-card {
+    background-color: var(--surface);
+    border: 1px solid var(--border-secondary);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    transition: border-color var(--transition-fast);
+}
+
+.today-workout-card:hover {
+    border-color: var(--border);
+}
+
+.today-workout-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-secondary);
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.split-name {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.split-day {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.today-workout-card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    gap: 16px;
+}
+
+.muscle-group-list {
+    list-style: none;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.muscle-group-list li {
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.muscle-group-list li::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--accent);
+}
+
+.view-exercise-btn {
+    width: auto;
+    white-space: nowrap;
+    border-radius: 8px !important;
+    font-size: 0.85rem !important;
+    padding: 8px 14px !important;
+}
+
+.rest-day-text {
+    padding: 18px 16px;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.start-workout-btn {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.workout-done-note {
+    text-align: center;
+    color: var(--text-secondary);
+    background-color: var(--surface);
+    font-size: 0.95rem;
+    padding: 16px;
+    border: 1px dotted var(--accent-dim);
+    border-radius: 14px;
+    font-weight: 500;
+}
+
+.empty-state {
+    color: var(--text-secondary);
+    padding: 16px;
+    font-size: 0.9rem;
+    background: var(--surface);
+    border: 1px dashed var(--border-secondary);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.loading-text {
+    text-align: center;
+    padding: 60px 0;
+    color: var(--text-secondary);
+}

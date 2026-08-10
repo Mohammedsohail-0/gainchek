@@ -84,6 +84,7 @@ model ClientProfile {
   coach      CoachProfile? @relation(fields: [coachId], references: [id])
   name       String
   goal       ClientGoal?
+  dob        DateTime?
   age        Int?
   gender     String?
   bodyWeight Int?

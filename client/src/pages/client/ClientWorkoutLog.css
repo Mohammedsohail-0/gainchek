@@ -1,0 +1,325 @@
+.workout-log-container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px 16px 40px;
+    color: var(--text-primary);
+}
+
+/* Top Header Bar */
+.workout-header-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 28px;
+    padding-block: 4px;
+}
+
+
+
+
+.finish-here-btn {
+    background: transparent;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    border-radius: var(--radius-full);
+    padding: 6px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.finish-here-btn:hover {
+    background: var(--accent-dim);
+}
+
+/* Target Muscle Title */
+.target-muscle-section {
+    margin-bottom: 24px;
+}
+
+.target-muscle-title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.target-muscle-label {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.target-muscle-value {
+    font-weight: 400;
+    color: var(--text-primary);
+    margin-left: 6px;
+    text-transform: capitalize;
+}
+
+/* Exercise Block */
+.workout-exercise-block {
+    margin-bottom: 32px;
+}
+
+.exercise-green-title {
+    color: var(--accent);
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+    text-transform: capitalize;
+}
+
+/* Table Header Row */
+.workout-table-header {
+    display: grid;
+    grid-template-columns: 50px 1.2fr 1fr 50px;
+    gap: 12px;
+    align-items: center;
+    padding: 0 16px;
+    margin-bottom: 12px;
+}
+
+.header-cell {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.header-cell.center {
+    text-align: center;
+}
+
+.header-cell.check-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+/* Set Row Card */
+.set-row-card {
+    display: grid;
+    grid-template-columns: 50px 1.2fr 1fr 50px;
+    gap: 12px;
+    align-items: center;
+    background-color: var(--surface);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-card);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: all var(--transition-fast);
+}
+
+.set-row-card.completed {
+    background-color: var(--accent-dim);
+    border-color: var(--accent);
+}
+
+.set-num-text {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.set-input-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.set-input {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1.05rem;
+    font-weight: 600;
+    width: 44px;
+    text-align: center;
+    font-family: var(--font-body);
+}
+
+.set-input:focus {
+    outline: none;
+}
+
+.set-input::-webkit-outer-spin-button,
+.set-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.set-input[type=number] {
+    -moz-appearance: textfield;
+}
+
+.unit-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.set-check-box {
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--border-secondary);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    padding: 0;
+    color: transparent;
+    font-size: 1rem;
+    font-weight: 700;
+    transition: all var(--transition-fast);
+}
+
+.set-check-box.checked {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+}
+
+/* Bottom Next / Finish Button */
+.workout-next-btn {
+    width: 100%;
+    background-color: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius-full);
+    padding: 16px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 24px;
+    transition: filter var(--transition-fast), transform var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.workout-next-btn:hover {
+    filter: brightness(1.08);
+}
+
+.workout-next-btn:active {
+    transform: scale(0.99);
+}
+
+.workout-next-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Skipped Sets Inline Warning Banner */
+.skipped-sets-warning-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: var(--accent-dim);
+    border: 1px solid var(--accent);
+    color: var(--text-primary);
+    border-radius: var(--radius-card);
+    padding: 12px 16px;
+    font-size: 0.88rem;
+    margin-block: 16px 8px;
+}
+
+.skipped-sets-warning-banner .warning-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+/* Warning Modal Backdrop & Box */
+.warning-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    padding: 16px;
+}
+
+.warning-modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-card);
+    padding: 24px;
+    max-width: 420px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.warning-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.warning-modal-title {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.warning-modal-body {
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.warning-motivating-sentence {
+    color: var(--accent);
+    font-weight: 600;
+    font-style: italic;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-card);
+    padding: 12px 14px;
+    margin-block: 4px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.warning-modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.warning-modal-actions .btn-component {
+    flex: 1;
+}

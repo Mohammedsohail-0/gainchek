@@ -17,7 +17,15 @@ router.get('/profile', async (req, res, next) => {
       where: { userId: req.user.userId },
       include: {
         user: { select: { email: true, name: true } },
-        coach: { include: { user: { select: { name: true, email: true } } } }
+        coach: {
+          include: {
+            user: { select: { name: true, email: true } },
+            gym: { select: { id: true, name: true } }
+          }
+        },
+        memberships: {
+          include: { gym: { select: { id: true, name: true } } }
+        }
       }
     });
     if (!client) return next(new NotFoundError('Client profile not found.'));
@@ -27,10 +35,23 @@ router.get('/profile', async (req, res, next) => {
   }
 });
 
+function calculateAge(dobInput) {
+  if (!dobInput) return null;
+  const birthDate = new Date(dobInput);
+  if (isNaN(birthDate.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age >= 0 ? age : null;
+}
+
 /** PUT /client/profile (used for onboarding and updates) */
 router.put('/profile', async (req, res, next) => {
   try {
-    const { name, goal, age, gender, bodyWeight } = req.body;
+    const { name, goal, dob, age: bodyAge, gender, bodyWeight } = req.body;
 
     if (goal !== undefined && goal !== null && !VALID_GOALS.includes(goal)) {
       return next(new BadRequestError(`goal must be one of: ${VALID_GOALS.join(', ')}`));
@@ -39,17 +60,169 @@ router.put('/profile', async (req, res, next) => {
     const client = await prisma.clientProfile.findUnique({ where: { userId: req.user.userId } });
     if (!client) return next(new NotFoundError('Client profile not found.'));
 
+    let computedAge = undefined;
+    let parsedDob = undefined;
+
+    if (dob !== undefined && dob !== null && dob !== '') {
+      parsedDob = new Date(dob);
+      computedAge = calculateAge(dob);
+    } else if (bodyAge !== undefined) {
+      computedAge = bodyAge;
+    }
+
     const updated = await prisma.clientProfile.update({
       where: { id: client.id },
       data: {
         ...(name !== undefined && { name: name.trim() }),
         ...(goal !== undefined && { goal }),
-        ...(age !== undefined && { age }),
+        ...(parsedDob !== undefined && { dob: parsedDob }),
+        ...(computedAge !== undefined && { age: computedAge }),
         ...(gender !== undefined && { gender }),
         ...(bodyWeight !== undefined && { bodyWeight }),
       }
     });
     res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /client/redeem-invite
+ * Body: { inviteCode }
+ * Redeem a COACH_TO_CLIENT or GYM_TO_CLIENT invite code.
+ */
+router.post('/redeem-invite', async (req, res, next) => {
+  try {
+    const { inviteCode } = req.body;
+    if (!inviteCode || typeof inviteCode !== 'string') {
+      return next(new BadRequestError('Invite code is required.'));
+    }
+
+    const invitation = await prisma.invitation.findUnique({
+      where: { inviteCode: inviteCode.trim() }
+    });
+
+    if (!invitation) {
+      return next(new BadRequestError('Invalid or expired invite code.'));
+    }
+
+    const client = await prisma.clientProfile.findUnique({ where: { userId: req.user.userId } });
+    if (!client) return next(new NotFoundError('Client profile not found.'));
+
+    if (invitation.type === 'COACH_TO_CLIENT' && invitation.coachId) {
+      if (client.coachId) {
+        return next(new BadRequestError('You are already assigned to a personal trainer. Please leave your current trainer before joining a new one.'));
+      }
+      await prisma.clientProfile.update({
+        where: { id: client.id },
+        data: { coachId: invitation.coachId, isActive: true }
+      });
+    } else if (invitation.type === 'GYM_TO_CLIENT' && invitation.gymId) {
+      const activeMembership = await prisma.gymMembership.findFirst({
+        where: { clientId: client.id, isActive: true }
+      });
+      if (activeMembership && activeMembership.gymId !== invitation.gymId) {
+        return next(new BadRequestError('You are already a member of a gym facility. Please leave your current gym before joining a new one.'));
+      }
+      await prisma.gymMembership.upsert({
+        where: { clientId_gymId: { clientId: client.id, gymId: invitation.gymId } },
+        create: { clientId: client.id, gymId: invitation.gymId, type: 'GENERAL', isActive: true },
+        update: { isActive: true }
+      });
+    } else {
+      return next(new BadRequestError('Invite code type not supported for client accounts.'));
+    }
+
+    const updatedProfile = await prisma.clientProfile.findUnique({
+      where: { id: client.id },
+      include: {
+        user: { select: { email: true, name: true } },
+        coach: {
+          include: {
+            user: { select: { name: true, email: true } },
+            gym: { select: { id: true, name: true } }
+          }
+        },
+        memberships: {
+          include: { gym: { select: { id: true, name: true } } }
+        }
+      }
+    });
+
+    res.json({ message: 'Invite redeemed successfully!', profile: updatedProfile });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /client/leave-coach
+ * Unassign client from personal trainer (sets coachId to null).
+ */
+router.post('/leave-coach', async (req, res, next) => {
+  try {
+    const client = await prisma.clientProfile.findUnique({ where: { userId: req.user.userId } });
+    if (!client) return next(new NotFoundError('Client profile not found.'));
+
+    await prisma.clientProfile.update({
+      where: { id: client.id },
+      data: { coachId: null }
+    });
+
+    const updatedProfile = await prisma.clientProfile.findUnique({
+      where: { id: client.id },
+      include: {
+        user: { select: { email: true, name: true } },
+        coach: {
+          include: {
+            user: { select: { name: true, email: true } },
+            gym: { select: { id: true, name: true } }
+          }
+        },
+        memberships: {
+          include: { gym: { select: { id: true, name: true } } }
+        }
+      }
+    });
+
+    res.json({ message: 'Successfully left personal trainer.', profile: updatedProfile });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /client/leave-gym
+ * Deactivate gym membership for the client.
+ */
+router.post('/leave-gym', async (req, res, next) => {
+  try {
+    const client = await prisma.clientProfile.findUnique({ where: { userId: req.user.userId } });
+    if (!client) return next(new NotFoundError('Client profile not found.'));
+
+    await prisma.gymMembership.updateMany({
+      where: { clientId: client.id },
+      data: { isActive: false }
+    });
+
+    const updatedProfile = await prisma.clientProfile.findUnique({
+      where: { id: client.id },
+      include: {
+        user: { select: { email: true, name: true } },
+        coach: {
+          include: {
+            user: { select: { name: true, email: true } },
+            gym: { select: { id: true, name: true } }
+          }
+        },
+        memberships: {
+          include: { gym: { select: { id: true, name: true } } }
+        }
+      }
+    });
+
+    res.json({ message: 'Successfully left gym facility.', profile: updatedProfile });
   } catch (err) {
     next(err);
   }
