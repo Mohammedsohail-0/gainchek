@@ -1,0 +1,163 @@
+.settings-page-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px 16px 60px 16px;
+    color: var(--text-primary, #ffffff);
+    box-sizing: border-box;
+}
+
+.settings-header {
+    margin-bottom: 24px;
+}
+
+.settings-title {
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0 0 6px 0;
+    color: var(--text-primary);
+}
+
+.settings-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.settings-card {
+    background: var(--surface);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-card);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.settings-card-title {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+}
+
+.settings-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.settings-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.settings-field-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.settings-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.settings-input,
+.settings-select {
+    background: var(--bg, #0a0a0a);
+    border: 1px solid var(--border-secondary, #505050);
+    border-radius: var(--radius-md, 8px);
+    padding: 10px 14px;
+    color: var(--text-primary, #ffffff);
+    font-size: 0.95rem;
+    outline: none;
+    font-family: inherit;
+    transition: border-color var(--transition-fast);
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+}
+
+.settings-input:focus,
+.settings-select:focus {
+    border-color: var(--accent);
+}
+
+.settings-read-only-value {
+    background: var(--bg, #0a0a0a);
+    border: 1px dashed var(--border-secondary, #505050);
+    border-radius: var(--radius-md, 8px);
+    padding: 10px 14px;
+    color: var(--text-primary, #ffffff);
+    font-size: 0.95rem;
+    font-weight: 600;
+    box-sizing: border-box;
+}
+
+.settings-info-box {
+    background: var(--bg);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-sizing: border-box;
+}
+
+.settings-info-box .info-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    word-break: break-word;
+    min-width: 0;
+}
+
+.settings-info-box .info-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.settings-info-box .info-sub {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.invite-input-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.invite-input-row .settings-input {
+    flex: 1;
+    min-width: 0;
+}
+
+@media (max-width: 540px) {
+    .settings-card {
+        padding: 16px;
+    }
+
+    .settings-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .invite-input-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .invite-input-row .btn-component {
+        width: 100%;
+    }
+}

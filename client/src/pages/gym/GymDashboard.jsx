@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
-import { useIsMobile } from '../../hooks/useIsMobile'
+import useIsMobile from '../../hooks/useIsMobile'
 import "./GymDashboard.css";
 import api from '../../services/api'
 import Sidebar from '../../components/Sidebar'

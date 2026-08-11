@@ -15,12 +15,20 @@ import ClientDetail from './pages/coach/ClientDetail'
 import CreatePlan from './pages/coach/CreatePlan'
 import EditPlan from './pages/coach/EditPlan'
 import TemplateList from './pages/coach/TemplateList'
+import CoachSettings from './pages/coach/CoachSettings'
 
 // Client
 import ClientHome from './pages/client/ClientHome'
 import ClientOnboarding from './pages/client/ClientOnboarding'
 import ClientPlan from './pages/client/ClientPlan'
 import ClientWorkoutLog from './pages/client/ClientWorkoutLog'
+import ClientSettings from './pages/client/ClientSettings'
+import { useParams } from 'react-router-dom'
+
+function InviteRedirect() {
+  const { inviteCode } = useParams()
+  return <Navigate to={`/register?invite=${inviteCode}`} replace />
+}
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { token, role } = useAuth()
@@ -48,6 +56,7 @@ function App() {
       {/* Public */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/invite/:inviteCode" element={<InviteRedirect />} />
       <Route path="/" element={<Navigate to={roleHomePath()} replace />} />
 
       {/* Gym Owner */}
@@ -61,6 +70,11 @@ function App() {
       <Route path="/coach" element={
         <ProtectedRoute allowedRoles={['coach']}>
           <Layout><CoachDashboard /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/coach/settings" element={
+        <ProtectedRoute allowedRoles={['coach']}>
+          <Layout><CoachSettings /></Layout>
         </ProtectedRoute>
       } />
       <Route path="/coach/clients/:id" element={
@@ -98,6 +112,11 @@ function App() {
       <Route path="/client" element={
         <ProtectedRoute allowedRoles={['client']}>
           <Layout><ClientHome /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/client/settings" element={
+        <ProtectedRoute allowedRoles={['client']}>
+          <Layout><ClientSettings /></Layout>
         </ProtectedRoute>
       } />
       <Route path="/client/onboarding" element={

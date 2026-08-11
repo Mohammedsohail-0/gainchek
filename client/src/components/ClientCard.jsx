@@ -1,14 +1,14 @@
 import "./ClientCard.css";
 import Profile from "./Profile";
 
-function ClientCard({ name, data, others, className }){
-    return(
-        <div className={`ClientCard ${className || ''}`}>
-            <Profile size={"lg"} name={name}></Profile>
+function ClientCard({ data, others, className, onClick, pSize, ...props }) {
+    return (
+        <div className={`ClientCard ${className || ''}`}{...props} onClick={onClick}>
             <div className="card-body">
+                <Profile size={pSize} className={"profile"} ></Profile>
                 {data && (
                     <div className="data">
-                       {data.map((line, i) => (
+                        {data.map((line, i) => (
                             <div key={i}>{line}</div>
                         ))}
                     </div>

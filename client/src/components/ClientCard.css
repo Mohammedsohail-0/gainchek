@@ -1,5 +1,5 @@
 .ClientCard {
-    display: flex;
+    display: grid;
     align-items: center;
     gap: 16px;
     padding: 16px 20px;
@@ -9,8 +9,9 @@
 }
 
 .ClientCard .card-body {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    align-items: center;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 6px;
     flex: 1;
 }

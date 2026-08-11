@@ -168,7 +168,7 @@ router.get('/activePlan/:clientId', async (req, res, next) => {
 
     const plan = await prisma.workoutPlan.findFirst({
       where: { clientId: req.params.clientId, isActive: true },
-      include: { workoutSplits: { include: { exercises: true } } }
+      include: { workoutSplits: { include: { exercises: { include: { exerciseSets: true } } } } }
     });
     if (!plan) return next(new NotFoundError('No active plan found for this client.'));
     res.json(plan);
