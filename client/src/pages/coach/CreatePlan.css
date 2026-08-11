@@ -5,6 +5,8 @@
   padding: 24px 24px 80px 24px;
   box-sizing: border-box;
   color: #ffffff;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 @media (max-width: 640px) {
@@ -143,6 +145,13 @@
   align-items: center;
   margin-bottom: 24px;
   padding: 0 4px;
+  gap: 2px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.days-nav-row::-webkit-scrollbar {
+  display: none;
 }
 
 .day-tab-btn {
@@ -151,10 +160,13 @@
   color: #a0a0a0;
   font-size: 1.15rem;
   font-weight: 600;
-  padding: 8px 12px;
+  padding: 8px 4px;
   cursor: pointer;
   position: relative;
   transition: color 0.2s ease;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
 }
 
 .day-tab-btn:hover {
@@ -296,6 +308,12 @@ input:checked+.slider-round:before {
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+  width: 100%;
+}
+
+.muscle-input-row > div {
+  flex: 1;
+  min-width: 0;
 }
 
 .muscle-input-row .form-input {
@@ -487,10 +505,10 @@ input:checked+.slider-round:before {
 /* Sets Grid Table */
 .sets-header-grid {
   display: grid;
-  grid-template-columns: 50px 1fr 1fr 40px;
-  gap: 12px;
+  grid-template-columns: 44px 1fr 1fr 36px;
+  gap: 8px;
   margin-bottom: 10px;
-  padding: 0 14px;
+  padding: 0 10px;
 }
 
 .sets-header-label {
@@ -505,10 +523,10 @@ input:checked+.slider-round:before {
   background: #141414;
   border: 1px solid #222222;
   border-radius: 14px;
-  padding: 10px 14px;
+  padding: 10px 10px;
   display: grid;
-  grid-template-columns: 50px 1fr 1fr 40px;
-  gap: 12px;
+  grid-template-columns: 44px 1fr 1fr 36px;
+  gap: 8px;
   align-items: center;
   margin-bottom: 10px;
 }
@@ -603,6 +621,13 @@ input:checked+.slider-round:before {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .step2-actions-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .step2-actions-row button {
