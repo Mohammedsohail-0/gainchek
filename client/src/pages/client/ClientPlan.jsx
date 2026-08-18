@@ -523,15 +523,33 @@ export default function ClientPlan() {
                 style={{ flex: 1 }}
                 onClick={() => setSelectedExerciseSplit(null)}
               />
-              {selectedExerciseSplit.splitObj && !selectedExerciseSplit.isRest && (
-                hasLoggedWorkoutToday ? (
-                  <Button
-                    variant="secondary"
-                    text="Logged Today"
-                    disabled
-                    style={{ flex: 1, opacity: 0.6, cursor: 'not-allowed' }}
-                  />
-                ) : (
+              {selectedExerciseSplit.splitObj && !selectedExerciseSplit.isRest && (() => {
+                const todayDay = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date().getDay()]
+                const isTodaySplit = selectedExerciseSplit.dayLower === todayDay
+
+                if (!isTodaySplit) {
+                  return (
+                    <Button
+                      variant="secondary"
+                      text={`Scheduled for ${selectedExerciseSplit.dayName}`}
+                      disabled
+                      style={{ flex: 1, opacity: 0.6, cursor: 'not-allowed' }}
+                    />
+                  )
+                }
+
+                if (hasLoggedWorkoutToday) {
+                  return (
+                    <Button
+                      variant="secondary"
+                      text="Logged Today"
+                      disabled
+                      style={{ flex: 1, opacity: 0.6, cursor: 'not-allowed' }}
+                    />
+                  )
+                }
+
+                return (
                   <Button
                     variant="primary-white-solid"
                     text="Log Workout"
@@ -543,7 +561,7 @@ export default function ClientPlan() {
                     }}
                   />
                 )
-              )}
+              })()}
             </div>
           </div>
         </div>

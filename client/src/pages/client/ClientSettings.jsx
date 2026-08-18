@@ -96,6 +96,8 @@ export default function ClientSettings() {
 
     if (code.includes('invite=')) {
       code = new URLSearchParams(code.split('?')[1] || '').get('invite') || code
+    } else if (code.includes('/invite/')) {
+      code = code.split('/invite/')[1].split('?')[0].split('/')[0] || code
     }
 
     setRedeeming(true)

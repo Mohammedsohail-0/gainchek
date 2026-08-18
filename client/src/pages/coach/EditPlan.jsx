@@ -138,13 +138,15 @@ export default function EditPlan({ isTemplate = false }) {
 
   const currentDayExercises = localExercises[selectedDay] || []
 
-  const exercisesForTarget = currentDayExercises.filter(ex => {
-    if (!targetMuscle || currentGroups.length <= 1) return true
-    if (!ex.muscleGroup) return true
-    return ex.muscleGroup.toLowerCase() === targetMuscle.toLowerCase()
-  })
-
-  const displayedExercises = exercisesForTarget.length > 0 ? exercisesForTarget : currentDayExercises
+  const displayedExercises = useMemo(() => {
+    if (!targetMuscle || currentGroups.length <= 1) {
+      return currentDayExercises
+    }
+    return currentDayExercises.filter(ex => {
+      if (!ex.muscleGroup) return false
+      return ex.muscleGroup.toLowerCase() === targetMuscle.toLowerCase()
+    })
+  }, [currentDayExercises, targetMuscle, currentGroups.length])
 
   const updateSplit = (dayName, changes) => {
     setSplits(prev => prev.map(s => s.day === dayName ? { ...s, ...changes } : s))
@@ -154,7 +156,7 @@ export default function EditPlan({ isTemplate = false }) {
       setLocalExercises(prev => {
         const list = prev[dayName] || []
         if (list.length === 0) {
-          const splitObj = splits.find(s => s.day === dayName)
+          const splitObj = Object.assign({}, splits.find(s => s.day === dayName), changes)
           const mg = (splitObj?.muscleGroups && splitObj.muscleGroups[0]) || ''
           return {
             ...prev,
@@ -183,16 +185,15 @@ export default function EditPlan({ isTemplate = false }) {
 
       setLocalExercises(prev => {
         const list = prev[selectedDay] || []
-        if (list.length === 0 || list.every(e => !e.name)) {
+        if (list.length === 0) {
           return {
             ...prev,
             [selectedDay]: [
-              ...(list.filter(e => e.name)),
               {
                 id: crypto.randomUUID(),
                 name: '',
                 muscleGroup: val,
-                order: list.length,
+                order: 0,
                 sets: [{ id: crypto.randomUUID(), setNumber: 1, reps: '', weight: '' }]
               }
             ]
@@ -520,6 +521,12 @@ export default function EditPlan({ isTemplate = false }) {
               >
                 {currentGroups.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
+            </div>
+          )}
+
+          {displayedExercises.length === 0 && targetMuscle && currentGroups.length > 0 && (
+            <div style={{ color: 'var(--text-secondary)', padding: '16px 0', fontSize: '0.9rem', fontStyle: 'italic' }}>
+              No exercises added for {targetMuscle} yet. Click below to add one.
             </div>
           )}
 

@@ -54,6 +54,7 @@
     background-color: transparent;
     color: var(--accent);
     font-weight: 500;
+    padding: 8px 18px;
     border: 2px solid var(--accent);
 }
 

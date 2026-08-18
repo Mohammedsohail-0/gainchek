@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
 
+import LandingPage from './pages/LandingPage'
+
 // Auth
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -54,10 +56,11 @@ function App() {
   return (
     <Routes>
       {/* Public */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/landing" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/invite/:inviteCode" element={<InviteRedirect />} />
-      <Route path="/" element={<Navigate to={roleHomePath()} replace />} />
 
       {/* Gym Owner */}
       <Route path="/gym" element={

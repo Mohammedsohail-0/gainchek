@@ -2,18 +2,20 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../context/AuthContext'
+import Button from '../components/Button'
 import api from '../services/api'
 
 export default function RegisterPage() {
   const [searchParams] = useSearchParams()
   const inviteCode = searchParams.get('invite')
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { token, role, name: userName } = useAuth()
 
   const [inviteInfo, setInviteInfo] = useState(null)
   const [checkingInvite, setCheckingInvite] = useState(true)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [accepting, setAccepting] = useState(false)
 
   useEffect(() => {
     if (!inviteCode) {
@@ -34,6 +36,7 @@ export default function RegisterPage() {
         credential: credentialResponse.credential,
         inviteCode,
       })
+      const { login } = useAuth()
       login(res.data.token, res.data.role, res.data.name)
       const r = res.data.role?.toLowerCase()
       navigate(r === 'client' ? '/client' : r === 'coach' ? '/coach' : '/gym')
@@ -41,6 +44,20 @@ export default function RegisterPage() {
       setError(err.response?.data?.error || 'Sign-up failed. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleLoggedInAccept = async () => {
+    setAccepting(true)
+    setError('')
+    try {
+      const res = await api.post('/client/redeem-invite', { inviteCode })
+      const r = role?.toLowerCase() || 'client'
+      navigate(r === 'client' ? '/client' : r === 'coach' ? '/coach' : '/gym')
+    } catch (err) {
+      setError(err.response?.data?.error || err.response?.data?.message || 'Failed to accept invite.')
+    } finally {
+      setAccepting(false)
     }
   }
 
@@ -121,15 +138,34 @@ export default function RegisterPage() {
                 <span>{contextLine}</span>
               </div>
             )}
-            <p className="auth-subtitle">Sign in with Google to accept your invite and set up your account.</p>
+
+            {token ? (
+              <div style={{ textAlign: 'center', marginTop: 12 }}>
+                <p className="auth-subtitle" style={{ marginBottom: 16 }}>
+                  You are signed in as <strong>{userName || 'Client'}</strong>.
+                </p>
+                <Button
+                  variant="primary"
+                  text={accepting ? 'Accepting invite...' : 'Accept Invite & Link Account'}
+                  onClick={handleLoggedInAccept}
+                  disabled={accepting}
+                  style={{ width: '100%', marginBottom: 16 }}
+                />
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  Or sign in with a different Google account below:
+                </p>
+              </div>
+            ) : (
+              <p className="auth-subtitle">Sign in with Google to accept your invite and set up your account.</p>
+            )}
             
             {loading ? (
               <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--text-secondary)' }}>
-                Creating account...
+                Processing account...
               </div>
             ) : (
               isGoogleConfigured && (
-                <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: token ? 8 : 16 }}>
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={() => setError('Google sign-in failed. Please try again.')}
