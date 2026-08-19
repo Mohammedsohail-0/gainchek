@@ -107,6 +107,10 @@ router.post('/redeem-invite', async (req, res, next) => {
       return next(new BadRequestError('Invalid or expired invite code.'));
     }
 
+    if (invitation.used) {
+      return next(new BadRequestError('This invite link has already been used.'));
+    }
+
     const client = await prisma.clientProfile.findUnique({ where: { userId: req.user.userId } });
     if (!client) return next(new NotFoundError('Client profile not found.'));
 
@@ -118,6 +122,7 @@ router.post('/redeem-invite', async (req, res, next) => {
         where: { id: client.id },
         data: { coachId: invitation.coachId, isActive: true }
       });
+      await prisma.invitation.update({ where: { id: invitation.id }, data: { used: true } });
     } else if (invitation.type === 'GYM_TO_CLIENT' && invitation.gymId) {
       const activeMembership = await prisma.gymMembership.findFirst({
         where: { clientId: client.id, isActive: true }
@@ -130,6 +135,7 @@ router.post('/redeem-invite', async (req, res, next) => {
         create: { clientId: client.id, gymId: invitation.gymId, type: 'GENERAL', isActive: true },
         update: { isActive: true }
       });
+      await prisma.invitation.update({ where: { id: invitation.id }, data: { used: true } });
     } else {
       return next(new BadRequestError('Invite code type not supported for client accounts.'));
     }

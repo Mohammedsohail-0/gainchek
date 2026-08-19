@@ -18,6 +18,15 @@ router.post('/workout', async (req, res, next) => {
     const client = await prisma.clientProfile.findUnique({ where: { userId: req.user.userId } });
     if (!client) return next(new NotFoundError('Client profile not found.'));
 
+    const split = await prisma.workoutSplit.findUnique({ where: { id: splitId } });
+    if (!split) return next(new NotFoundError('Workout split not found.'));
+
+    const todayDayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date().getDay()];
+    if (split.day && split.day.toLowerCase() !== todayDayName) {
+      const todayCap = todayDayName.charAt(0).toUpperCase() + todayDayName.slice(1);
+      return next(new BadRequestError(`You can only log today's scheduled workout (${todayCap}).`));
+    }
+
     const log = await prisma.workoutLog.create({
       data: {
         clientId: client.id,

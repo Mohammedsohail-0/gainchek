@@ -49,6 +49,7 @@ export default function ExerciseCard({ exercise, onRemove, onUpdate, nameOptions
             type="number"
             value={s.weight}
             onChange={e => updateSet(s.id, 'weight', e.target.value)}
+            onWheel={e => e.target.blur()}
             placeholder=""
           />
           <input
@@ -56,6 +57,7 @@ export default function ExerciseCard({ exercise, onRemove, onUpdate, nameOptions
             type="number"
             value={s.reps}
             onChange={e => updateSet(s.id, 'reps', e.target.value)}
+            onWheel={e => e.target.blur()}
             placeholder=""
           />
           <button

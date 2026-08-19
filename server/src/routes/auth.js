@@ -51,6 +51,69 @@ router.post('/google', async (req, res, next) => {
     }
 
     if (user) {
+      if (inviteCode) {
+        const invitation = await prisma.invitation.findUnique({ where: { inviteCode: inviteCode.trim() } });
+        if (!invitation) return next(new BadRequestError('Invalid invite link.'));
+        if (invitation.used) return next(new BadRequestError('This invite link has already been used.'));
+
+        if (invitation.type === 'COACH_TO_CLIENT') {
+          if (user.role !== 'CLIENT') {
+            return next(new BadRequestError('This invite link is for client accounts.'));
+          }
+          let clientProfile = await prisma.clientProfile.findUnique({ where: { userId: user.id } });
+          if (!clientProfile) {
+            clientProfile = await prisma.clientProfile.create({
+              data: {
+                userId: user.id,
+                name: user.name,
+                coachId: invitation.coachId,
+                isActive: true,
+              }
+            });
+          } else {
+            if (clientProfile.coachId && clientProfile.coachId !== invitation.coachId) {
+              return next(new BadRequestError('You are already assigned to a personal trainer. Please leave your current trainer before joining a new one.'));
+            }
+            await prisma.clientProfile.update({
+              where: { id: clientProfile.id },
+              data: { coachId: invitation.coachId, isActive: true }
+            });
+          }
+          await prisma.invitation.update({ where: { id: invitation.id }, data: { used: true } });
+        } else if (invitation.type === 'GYM_TO_CLIENT') {
+          if (user.role !== 'CLIENT') {
+            return next(new BadRequestError('This invite link is for client accounts.'));
+          }
+          let clientProfile = await prisma.clientProfile.findUnique({ where: { userId: user.id } });
+          if (!clientProfile) {
+            clientProfile = await prisma.clientProfile.create({
+              data: { userId: user.id, name: user.name }
+            });
+          }
+          const activeMembership = await prisma.gymMembership.findFirst({
+            where: { clientId: clientProfile.id, isActive: true }
+          });
+          if (activeMembership && activeMembership.gymId !== invitation.gymId) {
+            return next(new BadRequestError('You are already a member of a gym facility. Please leave your current gym before joining a new one.'));
+          }
+          await prisma.gymMembership.upsert({
+            where: { clientId_gymId: { clientId: clientProfile.id, gymId: invitation.gymId } },
+            create: { clientId: clientProfile.id, gymId: invitation.gymId, type: 'GENERAL', isActive: true },
+            update: { isActive: true }
+          });
+          await prisma.invitation.update({ where: { id: invitation.id }, data: { used: true } });
+        } else if (invitation.type === 'GYM_TO_COACH') {
+          if (user.role !== 'COACH') {
+            return next(new BadRequestError('This invite link is for trainer accounts.'));
+          }
+          await prisma.coachProfile.update({
+            where: { userId: user.id },
+            data: { gymId: invitation.gymId }
+          });
+          await prisma.invitation.update({ where: { id: invitation.id }, data: { used: true } });
+        }
+      }
+
       const token = issueToken(user);
       return res.json({ token, role: user.role, name: user.name });
     }

@@ -45,6 +45,15 @@ export default function ClientWorkoutLog() {
         setPlan(planRes.data)
         const found = planRes.data.workoutSplits?.find(s => s.id === splitId)
         if (!found) throw new Error('Split not found')
+
+        const todayDay = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date().getDay()]
+        if (found.day && found.day.toLowerCase() !== todayDay) {
+          const todayCap = todayDay.charAt(0).toUpperCase() + todayDay.slice(1)
+          toast.error(`You can only log today's scheduled workout (${todayCap}).`)
+          navigate('/client')
+          return
+        }
+
         setSplit(found)
 
         const init = {}
@@ -318,6 +327,7 @@ export default function ClientWorkoutLog() {
                       className="set-input"
                       value={weightVal}
                       onChange={e => updateSet(ex.id, si, 'weight', e.target.value)}
+                      onWheel={e => e.target.blur()}
                     />
                     <span className="unit-text">KG</span>
                   </div>
@@ -329,6 +339,7 @@ export default function ClientWorkoutLog() {
                       className="set-input"
                       value={repsVal}
                       onChange={e => updateSet(ex.id, si, 'reps', e.target.value)}
+                      onWheel={e => e.target.blur()}
                     />
                   </div>
 

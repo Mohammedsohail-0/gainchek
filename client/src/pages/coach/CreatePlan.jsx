@@ -201,7 +201,7 @@ export default function CreatePlan({ isTemplate = false }) {
   })
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto', padding: '0 24px' }}>
+    <div className="create-plan-container">
       {/* Header & Stepper */}
       <div className="create-plan-header-new">
         <div className="create-plan-title-row" onClick={() => navigate(-1)}>
@@ -224,7 +224,7 @@ export default function CreatePlan({ isTemplate = false }) {
 
       {/* ─── Step 1: Plan Details & Schedule ─────────────────────────────── */}
       {step === 1 && (
-        <div className="create-plan-container">
+        <>
           {/* Plan Title Section */}
           <div className="plan-section-label">
             <span className="green-asterisk">*</span> Plan Title:
@@ -348,12 +348,12 @@ export default function CreatePlan({ isTemplate = false }) {
           >
             {saving ? 'Creating Plan...' : 'Next: Add Exercises →'}
           </button>
-        </div>
+        </>
       )}
 
       {/* ─── Step 2: Exercise Builder ─────────────────────────────────────── */}
       {step === 2 && (
-        <div className="create-plan-container">
+        <>
           {/* Day Selector Tabs */}
           <div className="days-nav-row">
             {splitIds.map(({ day, id }) => {
@@ -449,7 +449,7 @@ export default function CreatePlan({ isTemplate = false }) {
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   )
