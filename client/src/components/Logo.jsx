@@ -4,7 +4,7 @@ import React from 'react'
  * GainChek Official Logo Component
  * Uses clean SVG assets from /public folder (/logo-full.svg or /logo-icon.svg)
  */
-export default function Logo({ height = 32, iconOnly = false, className = '', style = {} }) {
+export default function Logo({ height = 42, iconOnly = false, className = '', style = {} }) {
   const logoSrc = iconOnly ? '/logo-icon.svg' : '/logo-full.svg'
 
   return (
