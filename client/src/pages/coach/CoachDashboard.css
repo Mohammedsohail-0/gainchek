@@ -4,6 +4,13 @@
     margin-block: 5rem;
 }
 
+
+@media (max-width: 640px) {
+    .hero {
+        gap: 5rem;
+    }
+}
+
 .search-bar-add-client-wrapper {
     display: flex;
     gap: 10px;

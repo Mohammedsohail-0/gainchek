@@ -72,3 +72,12 @@
 .btn-component.danger:hover {
     background-color: rgba(239, 68, 68, 0.1);
 }
+
+.btn-component.btn-full-width {
+    width: 100%;
+}
+
+.btn-component.btn-loading {
+    opacity: 0.65;
+    cursor: not-allowed;
+}

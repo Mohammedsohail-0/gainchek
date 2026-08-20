@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import api from '../../services/api'
 import Button from '../../components/Button'
 import './CoachSettings.css'
 
 export default function CoachSettings() {
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const isOnboarding = searchParams.get('onboard') === '1'
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -43,6 +47,9 @@ export default function CoachSettings() {
       const res = await api.put('/coach/profile', { name })
       setProfile(res.data)
       toast.success('Profile updated successfully!')
+      if (isOnboarding) {
+        navigate('/coach')
+      }
     } catch (err) {
       console.error(err)
       toast.error(err.response?.data?.message || 'Failed to update profile.')
@@ -125,8 +132,14 @@ export default function CoachSettings() {
   return (
     <div className="coach-settings-container">
       <div className="coach-settings-header">
-        <h1 className="coach-settings-title">Coach Settings</h1>
-        <p className="coach-settings-subtitle">Manage your profile, gym affiliation, and recruit new clients.</p>
+        <h1 className="coach-settings-title">
+          {isOnboarding ? 'Complete Your Profile 🎉' : 'Coach Settings'}
+        </h1>
+        <p className="coach-settings-subtitle">
+          {isOnboarding
+            ? 'Welcome to GainChek! Set up your profile to get started.'
+            : 'Manage your profile, gym affiliation, and recruit new clients.'}
+        </p>
       </div>
 
       {/* ── 1. Profile Details Form ── */}
@@ -153,10 +166,18 @@ export default function CoachSettings() {
             style={{ opacity: 0.7, cursor: 'not-allowed' }}
           />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12, gap: 12 }}>
+          {isOnboarding && (
+            <Button
+              variant="secondary"
+              text="Skip for now"
+              type="button"
+              onClick={() => navigate('/coach')}
+            />
+          )}
           <Button
             variant="primary"
-            text={saving ? 'Saving...' : 'Save Profile'}
+            text={saving ? 'Saving...' : isOnboarding ? 'Save & Go to Dashboard' : 'Save Profile'}
             type="submit"
             disabled={saving}
           />

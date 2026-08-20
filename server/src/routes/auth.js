@@ -12,6 +12,33 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const issueToken = (user) =>
   jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
+// ── Resend email client (lazy-init so missing key doesn't crash the server) ──
+let resendClient = null;
+function getResend() {
+  if (!resendClient) {
+    const { Resend } = require('resend');
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resendClient;
+}
+
+// ── In-memory OTP store: Map<pendingId, { email, name, otp, expiresAt }> ──
+const otpStore = new Map();
+const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+function generateOtp() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function pruneExpiredOtps() {
+  const now = Date.now();
+  for (const [id, entry] of otpStore.entries()) {
+    if (entry.expiresAt < now) otpStore.delete(id);
+  }
+}
+// Prune every 5 min to keep memory clean
+setInterval(pruneExpiredOtps, 5 * 60 * 1000).unref();
+
 /**
  * POST /auth/google
  * Body: { credential, inviteCode?, role? }
@@ -114,8 +141,15 @@ router.post('/google', async (req, res, next) => {
         }
       }
 
+      // ── Multi-role detection: a user can be both a COACH and a CLIENT ──
+      const [hasCoach, hasClient] = await Promise.all([
+        prisma.coachProfile.findUnique({ where: { userId: user.id }, select: { id: true } }),
+        prisma.clientProfile.findUnique({ where: { userId: user.id }, select: { id: true } }),
+      ]);
+      const multiRole = !!(hasCoach && hasClient);
+
       const token = issueToken(user);
-      return res.json({ token, role: user.role, name: user.name });
+      return res.json({ token, role: user.role, name: user.name, multiRole });
     }
 
     // ── 2. New user with invite code ────────────────────────────────────────
@@ -366,5 +400,107 @@ if (process.env.NODE_ENV !== 'production') {
     }
   });
 }
+
+/**
+ * POST /auth/email-signup
+ * Body: { email, name }
+ * Sends a 6-digit OTP to the provided email via Resend.
+ * Returns { pendingId } — used in the next step.
+ */
+router.post('/email-signup', async (req, res, next) => {
+  try {
+    const { email, name } = req.body;
+    if (!email || !name) return next(new BadRequestError('Email and name are required.'));
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedName = name.trim();
+
+    // Block if email already registered
+    const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } });
+    if (existing) {
+      return next(new BadRequestError('An account with this email already exists. Please sign in instead.'));
+    }
+
+    if (!process.env.RESEND_API_KEY) {
+      return next(new BadRequestError('Email sign-up is not configured on this server. Please use Google sign-in.'));
+    }
+
+    const otp = generateOtp();
+    const pendingId = `pending_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    otpStore.set(pendingId, {
+      email: trimmedEmail,
+      name: trimmedName,
+      otp,
+      expiresAt: Date.now() + OTP_TTL_MS,
+    });
+
+    await getResend().emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'GainChek <email@example.com>',
+      to: trimmedEmail,
+      subject: `Your GainChek verification code: ${otp}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#111;color:#fff;border-radius:12px">
+          <h2 style="color:#4CAF50;margin-bottom:8px">GainChek ✓</h2>
+          <p style="color:#c2c2c2;margin-bottom:24px">Hi ${trimmedName}, here is your sign-up verification code:</p>
+          <div style="font-size:2.5rem;font-weight:700;letter-spacing:0.2em;text-align:center;background:#1a1a1a;padding:24px;border-radius:8px;margin-bottom:24px">${otp}</div>
+          <p style="color:#808080;font-size:0.85rem">This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.</p>
+        </div>
+      `,
+    });
+
+    res.json({ pendingId });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /auth/verify-email
+ * Body: { pendingId, otp }
+ * Verifies the OTP, creates the COACH user + coachProfile, issues JWT.
+ */
+router.post('/verify-email', async (req, res, next) => {
+  try {
+    const { pendingId, otp } = req.body;
+    if (!pendingId || !otp) return next(new BadRequestError('pendingId and otp are required.'));
+
+    const entry = otpStore.get(pendingId);
+    if (!entry) return next(new BadRequestError('Verification session not found or expired. Please restart sign-up.'));
+    if (Date.now() > entry.expiresAt) {
+      otpStore.delete(pendingId);
+      return next(new BadRequestError('Your verification code has expired. Please restart sign-up.'));
+    }
+    if (entry.otp !== String(otp).trim()) {
+      return next(new BadRequestError('Incorrect verification code. Please try again.'));
+    }
+
+    otpStore.delete(pendingId);
+
+    // Guard against duplicate accounts created between signup and verify
+    const existing = await prisma.user.findUnique({ where: { email: entry.email } });
+    if (existing) {
+      // Account was created by another path — just log them in
+      const token = issueToken(existing);
+      return res.json({ token, role: existing.role, name: existing.name });
+    }
+
+    const newUser = await prisma.user.create({
+      data: {
+        email: entry.email,
+        name: entry.name,
+        role: 'COACH',
+        coachProfile: {
+          create: { gymId: null },
+        },
+      },
+    });
+
+    const token = issueToken(newUser);
+    return res.json({ token, role: newUser.role, name: newUser.name, isNewAccount: true });
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = router;
