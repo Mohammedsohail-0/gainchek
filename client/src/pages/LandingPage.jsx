@@ -3,10 +3,18 @@ import { useNavigate } from 'react-router-dom'
 import Logo from '../components/Logo'
 import Button from '../components/Button'
 import './LandingPage.css';
+import { useIsMobile } from '../hooks/useIsMobile';
+
+// Capture the install prompt as early as possible
+let _deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _deferredPrompt = e;
+});
 
 function LandingPage() {
   return (
-    <div>
+    <div style={{ overflowX: 'hidden', width: '100%' }}>
       <Nav></Nav>
       <Hero></Hero>
       <ProblemsSection></ProblemsSection>
@@ -294,6 +302,21 @@ function Features() {
 
 function CTA() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
+
+  const handleGetStarted = async () => {
+    if (isMobile && _deferredPrompt) {
+      // Trigger the native PWA install dialog
+      _deferredPrompt.prompt();
+      const { outcome } = await _deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        _deferredPrompt = null;
+      }
+    } else {
+      navigate('/register')
+    }
+  }
+
   return (
     <section id='cta' className='cta-section'>
       <div className='cta-card'>
@@ -301,7 +324,12 @@ function CTA() {
           Only 25 Spots — Early Access
         </div>
         <p className='cta-headline'>We're starting with<span> 25 trainers</span> to get this right.<br></br>Once they're in, you'll join the waitlist.</p>
-        <Button variant={"primary"} className='final-cta-btn' text={"Get Started for free"} onClick={() => navigate('/register')}></Button>
+        <Button
+          variant={"primary"}
+          className='final-cta-btn'
+          text={isMobile ? "Install App" : "Get Started for free"}
+          onClick={handleGetStarted}
+        ></Button>
       </div>
     </section>
   )
