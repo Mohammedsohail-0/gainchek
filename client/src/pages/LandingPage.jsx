@@ -122,7 +122,7 @@ function ProblemsSection() {
     },
     {
       id: 2,
-      image: '/problem-pic -2.png',
+      image: '/problem-pic-2.png',
       highlight: ' Spending hours manually typing out workout plans every single night?'
     },
     {

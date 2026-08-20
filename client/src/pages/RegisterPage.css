@@ -1,0 +1,244 @@
+/* ── RegisterPage — Coach Sign-Up Styles ──────────────────────────────────── */
+
+.register-page {
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(76, 175, 80, 0.12) 0%, transparent 70%), var(--bg);
+  min-height: 100vh;
+}
+
+.register-card {
+  position: relative;
+  animation: slideUp 0.35s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Back button ── */
+.register-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-bottom: 16px;
+  transition: color var(--transition-fast);
+}
+
+.register-back-btn:hover {
+  color: var(--text-primary);
+}
+
+/* ── Method chooser ── */
+.register-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.register-method-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.register-method-google {
+  display: flex;
+  flex-direction: column;
+}
+
+.register-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.register-divider::before,
+.register-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-secondary);
+}
+
+.register-email-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* ── OTP step ── */
+.otp-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.otp-email-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: var(--accent-dim);
+  border-radius: var(--radius-full);
+  color: var(--accent);
+  margin: 0 auto 16px;
+}
+
+.otp-inputs {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 20px 0 0;
+}
+
+.otp-digit {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  background: var(--surface-hover);
+  border: 1.5px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  caret-color: var(--accent);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  outline: none;
+}
+
+.otp-digit:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.otp-digit.filled {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.otp-resend {
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* ── Role picker modal (multi-role login) ── */
+.role-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.role-picker-card {
+  background: var(--surface);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-card);
+  padding: 32px 28px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  animation: scaleIn 0.25s ease;
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.role-picker-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.role-picker-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.role-picker-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.role-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--surface-hover);
+  border: 1.5px solid var(--border-secondary);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+  text-align: left;
+  width: 100%;
+}
+
+.role-picker-option:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.role-picker-option-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.role-picker-option-text strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.role-picker-option-text span {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .otp-digit {
+    width: 40px;
+    height: 48px;
+    font-size: 1.25rem;
+  }
+
+  .otp-inputs {
+    gap: 6px;
+  }
+}
