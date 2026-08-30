@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import api from '../../services/api'
 import './TemplateList.css'
+import SearchBar from '../../components/SearchBar'
 
 export default function TemplateList() {
   const navigate = useNavigate()
@@ -41,11 +42,13 @@ export default function TemplateList() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
         <div>
           <h1 className="page-title">Workout Templates</h1>
-          <p>Reusable workout splits and programs for quick assignment.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/coach/templates/create')}>
-          + New Template
-        </button>
+        <div>
+          <SearchBar></SearchBar>
+          <button className="btn btn-primary" onClick={() => navigate('/coach/templates/create')}>
+            + New Template
+          </button>
+        </div>
       </div>
 
       {templates.length === 0 ? (

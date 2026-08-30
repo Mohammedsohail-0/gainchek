@@ -71,9 +71,10 @@ model CoachProfile {
   gym       Gym?     @relation(fields: [gymId], references: [id])
   createdAt DateTime @default(now())
 
-  clients     ClientProfile[]
-  invitations Invitation[]
+  clients      ClientProfile[]
+  invitations  Invitation[]
   workoutPlans WorkoutPlan[]
+  dietTemplates DietTemplate[]
 }
 
 model ClientProfile {
@@ -252,4 +253,28 @@ model BodyWeightLog {
   loggedAt  DateTime      @default(now())
 
   @@index([clientId])
+}
+
+// ─── Diet Templates ───────────────────────────────────────────────────────────
+
+model DietTemplate {
+  id          String       @id @default(uuid())
+  coachId     String
+  coach       CoachProfile @relation(fields: [coachId], references: [id])
+  title       String
+  description String?
+  createdAt   DateTime     @default(now())
+
+  meals DietTemplateMeal[]
+
+  @@index([coachId])
+}
+
+model DietTemplateMeal {
+  id             String       @id @default(uuid())
+  dietTemplateId String
+  dietTemplate   DietTemplate @relation(fields: [dietTemplateId], references: [id], onDelete: Cascade)
+  name           String
+  notes          String?
+  order          Int          @default(0)
 }

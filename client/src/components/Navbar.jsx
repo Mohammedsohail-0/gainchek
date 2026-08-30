@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Logo from './Logo'
 import Button from './Button'
 
 const COACH_LINKS = [
   { to: '/coach', label: 'Dashboard' },
-  { to: '/coach/templates', label: 'Templates' },
+  { to: '/coach/templates', label: 'Workouts' },
+  { to: '/coach/diet-templates', label: 'Diet' },
   { to: '/coach/settings', label: 'Settings' },
 ]
 
@@ -28,9 +28,10 @@ export default function Navbar() {
   const { token, role, name, logout } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const r = role?.toLowerCase()
+  const isCoach = r === 'coach'
+
   const links = !token
     ? PUBLIC_LINKS
     : r === 'coach'
@@ -49,12 +50,7 @@ export default function Navbar() {
     ? '/coach'
     : '/client'
 
-  useEffect(() => {
-    setMobileMenuOpen(false)
-  }, [location.pathname])
-
   const handleLogout = () => {
-    setMobileMenuOpen(false)
     logout()
     navigate('/login')
   }
@@ -116,54 +112,18 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* Mobile Hamburger Button */}
-      <button
-        className="navbar-hamburger-btn"
-        aria-label="Toggle navigation menu"
-        onClick={() => setMobileMenuOpen(prev => !prev)}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
-          <path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z"/>
-        </svg>
-      </button>
-
-      {/* Mobile Fullscreen Overlay */}
-      {mobileMenuOpen && (
-        <div className="mobile-navbar-overlay">
-          <div className="mobile-navbar-header">
-            <button
-              className="navbar-hamburger-btn"
-              aria-label="Close menu"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
-                <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
-              </svg>
-            </button>
-          </div>
-
-          <div className="mobile-navbar-content">
-            {links.map(l => (
-              <Link
-                key={l.to}
-                to={l.to}
-                className="mobile-nav-link"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {l.label}
-              </Link>
-            ))}
-            {token ? (
-              <button className="mobile-nav-logout-btn" onClick={handleLogout}>
-                Sign Out
-              </button>
-            ) : (
-              <button className="mobile-nav-logout-btn" onClick={() => { setMobileMenuOpen(false); navigate('/login'); }}>
-                Sign In
-              </button>
-            )}
-          </div>
-        </div>
+      {/* Mobile Settings Button — coaches only, hidden on desktop */}
+      {isCoach && (
+        <Link
+          to="/coach/settings"
+          className="navbar-mobile-settings-btn"
+          aria-label="Settings"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </Link>
       )}
     </nav>
   )

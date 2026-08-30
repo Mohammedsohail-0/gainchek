@@ -42,6 +42,7 @@ export default function ClientDetail() {
 
   // Template Assign Modal state
   const [showAssignModal, setShowAssignModal] = useState(false)
+  const [assignModalType, setAssignModalType] = useState('workout')
   const [templates, setTemplates] = useState([])
   const [loadingTemplates, setLoadingTemplates] = useState(false)
   const [selectedTemplateId, setSelectedTemplateId] = useState(null)
@@ -117,11 +118,13 @@ export default function ClientDetail() {
     }
   }
 
-  const handleOpenAssignModal = async () => {
+  const handleOpenAssignModal = async (type = 'workout') => {
+    setAssignModalType(type)
     setShowAssignModal(true)
     setLoadingTemplates(true)
     try {
-      const res = await api.get('/workout/plan/templates')
+      const endpoint = type === 'diet' ? '/diet/templates' : '/workout/plan/templates'
+      const res = await api.get(endpoint)
       const tmpls = res.data || []
       setTemplates(tmpls)
       if (tmpls.length > 0) {
@@ -131,7 +134,7 @@ export default function ClientDetail() {
       }
     } catch (err) {
       console.error(err)
-      toast.error('Failed to load templates')
+      toast.error(type === 'diet' ? 'Failed to load diet templates' : 'Failed to load templates')
     } finally {
       setLoadingTemplates(false)
     }
@@ -262,21 +265,15 @@ export default function ClientDetail() {
     <div className="client-plan-actions">
       <button
         className="btn-white-pill"
-        onClick={handleOpenAssignModal}
+        onClick={() => handleOpenAssignModal('workout')}
       >
-        Assign Plan
+        Workout
       </button>
       <button
         className="btn-white-pill"
-        onClick={() => {
-          if (activePlan?.id) {
-            navigate(`/coach/clients/${id}/plan/${activePlan.id}/edit`)
-          } else {
-            toast.error('No plan assigned')
-          }
-        }}
+        onClick={() => handleOpenAssignModal('diet')}
       >
-        Edit Plan
+        Diet
       </button>
     </div>
   )
@@ -655,7 +652,7 @@ export default function ClientDetail() {
         </div>
       )}
 
-      {/* ── 9. Select Plan to Assign Modal ── */}
+      {/* ── 9. Select Plan / Diet to Assign/Edit Modal ── */}
       {showAssignModal && (
         <div className="modal-backdrop" onClick={() => setShowAssignModal(false)}>
           <div
@@ -663,7 +660,9 @@ export default function ClientDetail() {
             onClick={e => e.stopPropagation()}
           >
             <div className="assign-modal-header">
-              <h3 className="assign-modal-title">Select a Plan to assign</h3>
+              <h3 className="assign-modal-title">
+                {assignModalType === 'diet' ? 'Select a Diet Plan' : 'Select a Plan to assign'}
+              </h3>
               <button
                 className="modal-close-btn"
                 onClick={() => setShowAssignModal(false)}
@@ -676,10 +675,15 @@ export default function ClientDetail() {
               {loadingTemplates ? (
                 <div className="no-templates-text">Loading templates...</div>
               ) : templates.length === 0 ? (
-                <div className="no-templates-text">No templates available</div>
+                <div className="no-templates-text">
+                  {assignModalType === 'diet' ? 'No diet templates available' : 'No templates available'}
+                </div>
               ) : (
                 templates.map(t => {
                   const isSelected = selectedTemplateId === t.id
+                  const isWorkout = assignModalType === 'workout'
+                  const hasPlan = isWorkout ? Boolean(activePlan?.id) : true
+
                   return (
                     <div
                       key={t.id}
@@ -691,19 +695,39 @@ export default function ClientDetail() {
                       </div>
                       <span className="template-title">{t.title}</span>
                       {isSelected && (
-                        <button
-                          className="assign-arrow-btn"
-                          disabled={assigningTemplate}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleAssignTemplate(t.id)
-                          }}
-                          title="Assign this template"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor">
-                            <path d="m560-240-56-58 142-142H160v-80h486L504-662l56-58 240 240-240 240Z" />
-                          </svg>
-                        </button>
+                        hasPlan ? (
+                          <button
+                            className="assign-arrow-btn"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setShowAssignModal(false)
+                              if (isWorkout) {
+                                navigate(`/coach/clients/${id}/plan/${activePlan.id}/edit`)
+                              } else {
+                                navigate(`/coach/diet-templates/${t.id}/edit`)
+                              }
+                            }}
+                            title={isWorkout ? "Edit active plan" : "Edit diet template"}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor">
+                              <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h357l-80 80H200v560h560v-277l80-80v357q0 33-23.5 56.5T760-120H200Zm280-360ZM360-360v-170l367-367q12-12 27-18t30-6q16 0 30.5 6t26.5 18l57 57q12 12 18 26.5t6 30.5q0 15-6 30t-18 27L430-360H360Zm480-480-57-57 57 57ZM440-440h57l279-279-29-28-28-29-279 279v57Zm279-279-28-29 28 29 29 28-29-28Z" />
+                            </svg>
+                          </button>
+                        ) : (
+                          <button
+                            className="assign-arrow-btn"
+                            disabled={assigningTemplate}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleAssignTemplate(t.id)
+                            }}
+                            title="Assign this template"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor">
+                              <path d="m560-240-56-58 142-142H160v-80h486L504-662l56-58 240 240-240 240Z" />
+                            </svg>
+                          </button>
+                        )
                       )}
                     </div>
                   )
@@ -720,10 +744,14 @@ export default function ClientDetail() {
             <Button
               className="btn-outline-white-pill"
               variant="primary-white"
-              text="Create new plan"
+              text={assignModalType === 'diet' ? 'Create new diet template' : 'Create new plan'}
               onClick={() => {
                 setShowAssignModal(false)
-                navigate(`/coach/clients/${id}/plan/create`)
+                if (assignModalType === 'diet') {
+                  navigate('/coach/diet-templates')
+                } else {
+                  navigate(`/coach/clients/${id}/plan/create`)
+                }
               }}
             />
           </div>

@@ -129,7 +129,7 @@ export default function CoachDashboard() {
       </div>
 
       <div className="clients-table-header">
-        <h1>Clients</h1>
+        <h2>Clients</h2>
         <div className="search-bar-add-client-wrapper">
           <SearchBar
             type="text"

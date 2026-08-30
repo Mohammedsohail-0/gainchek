@@ -1,0 +1,253 @@
+/* ─── Diet Template Edit ─────────────────────────────────────────────────── */
+
+.diet-edit-container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .diet-edit-container {
+    padding: 16px 16px 80px;
+  }
+}
+
+/* ── Back link ──────────────────────────────────────────────────────────── */
+
+.diet-edit-back {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-body);
+  transition: color var(--transition-fast);
+}
+
+.diet-edit-back:hover {
+  color: var(--text-primary);
+}
+
+/* ── Header card ────────────────────────────────────────────────────────── */
+
+.diet-edit-header-card {
+  background: var(--surface);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-card);
+  padding: 20px 24px;
+  margin-bottom: 28px;
+}
+
+.diet-edit-header-view {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.diet-edit-title {
+  font-size: 1.5rem;
+  margin: 0 0 6px;
+}
+
+.diet-edit-desc {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.diet-edit-header-btn {
+  background: transparent;
+  border: 1px solid var(--border-secondary);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.diet-edit-header-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.diet-edit-header-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* shared input/textarea (also used in DietTemplateList) */
+.diet-input {
+  background: var(--surface-hover);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  width: 100%;
+  transition: border-color var(--transition-fast);
+}
+
+.diet-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.diet-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.diet-create-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ── Meals section ─────────────────────────────────────────────────────── */
+
+.diet-meals-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.diet-meals-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.diet-meals-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.diet-meals-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 40px 24px;
+  background: var(--surface);
+  border: 1px dashed var(--border-secondary);
+  border-radius: var(--radius-card);
+}
+
+.diet-meal-form {
+  background: var(--surface);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-card);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.diet-meals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Meal card ─────────────────────────────────────────────────────────── */
+
+.diet-meal-card {
+  background: #0d0d0d;
+  border: 1px solid #282828;
+  border-radius: var(--radius-card);
+  padding: 14px 18px;
+  transition: border-color var(--transition-fast);
+}
+
+.diet-meal-card:hover {
+  border-color: var(--border-secondary);
+}
+
+.diet-meal-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.diet-meal-number {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  margin-top: 2px;
+}
+
+.diet-meal-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.diet-meal-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.diet-meal-notes {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.diet-meal-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.diet-meal-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  color: var(--text-muted);
+}
+
+.diet-meal-action-btn.edit:hover {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.diet-meal-action-btn.remove:hover {
+  background: var(--error-dim);
+  color: var(--error);
+}
+
+.diet-meal-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

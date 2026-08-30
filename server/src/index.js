@@ -12,6 +12,7 @@ const workoutRouter = require('./routes/workout');
 const logRouter = require('./routes/log');
 const analyticsRouter = require('./routes/analytics');
 const libraryRouter = require('./routes/library');
+const dietRouter = require('./routes/diet');
 const { errorHandler } = require('./lib/errors');
 
 const app = express();
@@ -45,6 +46,7 @@ app.use('/workout', workoutRouter);
 app.use('/log', logRouter);
 app.use('/analytics', analyticsRouter);
 app.use('/library', libraryRouter);
+app.use('/diet', dietRouter);
 
 // 404
 app.use((req, res) => {

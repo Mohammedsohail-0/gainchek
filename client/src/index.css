@@ -403,15 +403,9 @@ ol {
   font-weight: 600;
 }
 
-.navbar-hamburger-btn {
+/* ─── Mobile Settings Button (coach only) ─── */
+.navbar-mobile-settings-btn {
   display: none;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  color: #ffffff;
-  align-items: center;
-  justify-content: center;
 }
 
 /* ─── Mobile Navbar Responsive Styles ─── */
@@ -420,71 +414,25 @@ ol {
     display: none;
   }
 
-  .navbar-hamburger-btn {
+  .navbar-mobile-settings-btn {
     display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    text-decoration: none !important;
+    transition: color var(--transition-fast), background var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
   }
-}
 
-.mobile-navbar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #080808;
-  z-index: 999;
-  display: flex;
-  flex-direction: column;
-  padding: 16px 20px;
-}
-
-.mobile-navbar-header {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  height: 48px;
-}
-
-.mobile-navbar-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 36px;
-  padding-bottom: 60px;
-}
-
-.mobile-nav-link {
-  font-size: 1.85rem;
-  font-weight: 700;
-  color: #22c55e;
-  text-decoration: none;
-  transition: opacity 0.2s ease;
-}
-
-.mobile-nav-link:hover {
-  opacity: 0.85;
-  text-decoration: none;
-}
-
-.mobile-nav-logout-btn {
-  width: 85%;
-  max-width: 320px;
-  background: transparent;
-  border: 1.5px solid #22c55e;
-  color: #22c55e;
-  border-radius: 9999px;
-  padding: 12px 24px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: center;
-  transition: background 0.2s ease, opacity 0.2s ease;
-}
-
-.mobile-nav-logout-btn:hover {
-  background: rgba(34, 197, 94, 0.1);
+  .navbar-mobile-settings-btn:hover,
+  .navbar-mobile-settings-btn:focus-visible {
+    color: var(--accent);
+    background: var(--accent-dim);
+    text-decoration: none !important;
+  }
 }
 
 /* ─── Cards Pattern ──────────────────────────────────────────────────────── */

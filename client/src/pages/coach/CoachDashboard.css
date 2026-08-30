@@ -7,7 +7,9 @@
 
 @media (max-width: 640px) {
     .hero {
-        gap: 5rem;
+        display: flex;
+        flex-direction: row;
+        gap: 4rem;
     }
 }
 
@@ -53,4 +55,10 @@
     align-items: center;
     margin-inline: 1.9rem;
 
+}
+
+.add-client-btn {
+    font-size: 0.4rem;
+    padding-inline: 8px;
+    margin-inline: 0px;
 }

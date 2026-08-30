@@ -18,6 +18,8 @@ import CreatePlan from './pages/coach/CreatePlan'
 import EditPlan from './pages/coach/EditPlan'
 import TemplateList from './pages/coach/TemplateList'
 import CoachSettings from './pages/coach/CoachSettings'
+import DietTemplateList from './pages/coach/DietTemplateList'
+import DietTemplateEdit from './pages/coach/DietTemplateEdit'
 
 // Client
 import ClientHome from './pages/client/ClientHome'
@@ -108,6 +110,18 @@ function App() {
       <Route path="/coach/templates/:planId/edit" element={
         <ProtectedRoute allowedRoles={['coach']}>
           <EditPlan isTemplate />
+        </ProtectedRoute>
+      } />
+
+      {/* Coach — Diet Templates */}
+      <Route path="/coach/diet-templates" element={
+        <ProtectedRoute allowedRoles={['coach']}>
+          <Layout><DietTemplateList /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/coach/diet-templates/:id/edit" element={
+        <ProtectedRoute allowedRoles={['coach']}>
+          <Layout><DietTemplateEdit /></Layout>
         </ProtectedRoute>
       } />
 

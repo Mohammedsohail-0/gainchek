@@ -2,13 +2,13 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0 14px;
+    padding: 0 12px;
     border: 1px solid var(--border-secondary);
     border-radius: 50px;
     background-color: var(--surface-hover);
     color: var(--text-primary);
     width: 100%;
-    max-width: 320px;
+    max-width: 300px;
     outline: none !important;
 }
 
@@ -34,13 +34,28 @@
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
-    padding: 10px 0;
+    padding: 8px 0;
     color: var(--text-primary);
     width: 100%;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-family: inherit;
 }
 
 .search-container input::placeholder {
     color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+    .search-container {
+        max-width: 80%;
+        padding: 0 10px;
+    }
+
+    .search-container input,
+    .search-container input:focus,
+    .search-container input:focus-visible,
+    .search-container input:active {
+        padding: 1px 0;
+        font-size: 0.875rem;
+    }
 }
