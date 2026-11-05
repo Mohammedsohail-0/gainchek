@@ -1,4 +1,4 @@
-require('dotenv').config();
+const config = require('./lib/config');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -21,7 +21,7 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: config.CLIENT_URL,
   credentials: true,
 }));
 app.use(express.json({ limit: '1mb' }));
@@ -58,10 +58,12 @@ app.use(errorHandler);
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`\n🚀 GainChek v2 API running on port ${PORT}`);
-  console.log(`   Health check: http://localhost:${PORT}/health\n`);
-});
+const PORT = config.PORT;
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`\n🚀 GainChek v2 API running on port ${PORT}`);
+    console.log(`   Health check: http://localhost:${PORT}/health\n`);
+  });
+}
 
 module.exports = app;

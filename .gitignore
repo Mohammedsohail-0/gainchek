@@ -16,7 +16,7 @@ client/dist/
 .env.production.local
 
 # Prisma
-server/prisma/migrations/
+# migrations are tracked in git
 
 # Logs
 npm-debug.log*

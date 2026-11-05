@@ -7,10 +7,14 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "postinstall": "prisma generate",
-    "db:push": "prisma db push",
+    "postinstall": "prisma generate --schema=prisma/schema.prisma",
+    "prisma:validate": "prisma validate --schema=prisma/schema.prisma",
+    "prisma:generate": "prisma generate --schema=prisma/schema.prisma",
+    "check:syntax": "node scripts/check-syntax.js",
+    "test": "node --test tests/**/*.test.js",
+    "db:push": "prisma db push --schema=prisma/schema.prisma",
     "db:seed": "node prisma/seed.js",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio --schema=prisma/schema.prisma"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
